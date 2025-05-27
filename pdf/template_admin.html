@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Resumen Administrativo</title>
+  <style>
+    body { zoom: 0.95; }
+    body {
+      font-family: DejaVu Sans, sans-serif;
+      font-size: 10.5px;
+      margin: 20px;
+      color: #333;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .header img {
+      width: 80px;
+    }
+    .section {
+      margin-bottom: 15px;
+    }
+    .section-title {
+      background-color: #FDEBD0;
+      color: #A04000;
+      padding: 4px;
+      border-left: 6px solid #E67E22;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+      margin-bottom: 10px;
+    }
+    .table th, .table td {
+      border: 1px solid #E59866;
+      padding: 4px;
+      text-align: left;
+    }
+    .table th {
+      background-color: #FAD7A0;
+    }
+    .signature {
+      text-align: center;
+      margin-top: 40px;
+    }
+  </style>
+</head>
+<body>
+<table style="width: 100%; margin-bottom: 15px; border-collapse: collapse;">
+  <tr>
+    <td style="width: 100px;">
+      <img src="{{logo_path}}" alt="Logo" style="width: 80px;">
+    </td>
+    <td style="font-size: 13px; line-height: 1.5; width: 60%;">
+      <strong style="font-size: 16px; color: #D35400;">Hotel Melaque Puesta del Sol</strong><br>
+      Gómez Farías No. 31<br>
+      Tels. 315 355 5797 y 315 355 5777<br>
+      San Patricio Melaque, Jalisco. C.P. 48980
+    </td>
+    <td style="text-align: right; vertical-align: top;">
+      <div style="font-size: 12px; line-height: 1.5;">
+        <strong>Ignacio Gutiérrez Anaya</strong><br>
+        Cuenta: 11 77 87 · Sucursal: 736<br>
+        CLABE: 002385073601177875<br>
+        <img src="https://cdn-icons-png.flaticon.com/512/124/124034.png" alt="WhatsApp" style="width: 18px; vertical-align: middle; filter: hue-rotate(-20deg) saturate(5);"> 314 218 4501
+      </div>
+    </td>
+  </tr>
+</table>
+
+<div style="text-align: center; margin-bottom: 10px;">
+  <strong style="font-size: 14px;">Resumen Administrativo</strong>
+</div>
+
+<div class="section">
+  <div class="section-title">Datos Generales</div>
+  <table class="table">
+    <tr><td><strong>Cliente:</strong> {{cliente}}</td><td><strong>Teléfono:</strong> {{telefono}}</td></tr>
+    <tr><td><strong>Email:</strong> {{email}}</td><td><strong>Nacionalidad:</strong> {{nacionalidad}}</td></tr>
+    <tr><td><strong>Habitación:</strong> {{habitacion}}</td><td><strong>Fechas:</strong> {{fecha_inicio}} a {{fecha_fin}}</td></tr>
+    <tr><td><strong>Noches:</strong> {{noches}}</td><td></td></tr>
+  </table>
+</div>
+
+<div class="section">
+  <div class="section-title">Pago en Hotel y Ticket de Anticipo</div>
+  <strong>Monto recibido:</strong> ${{anticipo_monto}}<br>
+  <strong>Método de pago:</strong> {{anticipo_metodo}}<br>
+</div>
+
+<div class="section">
+  <div class="section-title">Pagos Extra (a distancia)</div>
+  <table class="table">
+    <thead>
+      <tr><th>Monto</th><th>Método</th><th>Clave</th><th>Autorización</th><th>Fecha</th></tr>
+    </thead>
+    <tbody>
+      {{filas_pagos}}
+    </tbody>
+  </table>
+</div>
+
+<div class="section">
+  <div class="section-title">Verificación</div>
+  <strong>Verificado por WhatsApp:</strong> {{verificado}}<br>
+  <strong>Fecha y hora:</strong> {{verificacion_fecha}}<br>
+  <strong>Persona que verificó:</strong> {{verificacion_persona}}<br>
+</div>
+
+<div class="section">
+  <div class="section-title">Resumen Financiero</div>
+  <table class="table">
+    <tr><td><strong>Tarifa por noche</strong></td><td>${{tarifa_noche}}</td><td><strong>Número de noches</strong></td><td>{{noches}}</td></tr>
+    <tr><td><strong>Subtotal</strong></td><td>${{subtotal}}</td><td><strong>IVA ({{iva}}%)</strong></td><td>${{iva_monto}}</td></tr>
+    <tr><td><strong>ISH ({{ish}}%)</strong></td><td>${{ish_monto}}</td><td><strong>Descuento INAPAM</strong></td><td>${{inapam}}</td></tr>
+    <tr><td><strong>Total a pagar</strong></td><td>${{total}}</td><td><strong>Total pagado</strong></td><td>${{pagado}}</td></tr>
+    <tr><td><strong>Saldo restante</strong></td><td colspan="3"><strong>${{saldo}}</strong></td></tr>
+  </table>
+</div>
+
+<div class="signature">
+  ___________________________<br>
+  Firma del responsable<br>
+  Fecha: {{fecha_actual}}
+</div>
+</body>
+</html>

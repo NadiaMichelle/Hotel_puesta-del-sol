@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Recepción - Hotel Melaque Puesta del Sol</title>
+ <style>
+   @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
+    body {
+      font-family: DejaVu Sans, sans-serif;
+      font-size: 10px;
+      margin: 20px;
+      color: #004d4d;
+    }
+    .title {
+      font-size: 14px;
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 5px;
+      color: #007b7b;
+    }
+    .flex-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .flex-header img {
+      height: 100px;
+      object-fit: contain;
+    }
+    .section-title {
+      font-weight: bold;
+      font-size: 12px;
+      margin-top: 10px;
+      margin-bottom: 5px;
+      background-color: #b2dfdb;
+      padding: 2px;
+      color: #004d4d;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 8px;
+    }
+    td, th {
+      border: 1px solid #66b2b2;
+      padding: 3px;
+    }
+    .checkbox-group td {
+      border: none;
+    }
+    .notes {
+      font-size: 9px;
+    }
+    .firma {
+      margin-top: 20px;
+      text-align: right;
+      font-size: 10px;
+    }
+  .icons {
+      text-align: center;
+      margin-top: 10px;
+      font-size: 14px;
+      color: #9e0808;
+    }
+    .icons i {
+      margin: 0 10px;
+    }
+  </style>
+<body>
+
+<table style="width: 100%; margin-bottom: 15px; border-collapse: collapse;">
+  <tr>
+    <td style="width: 100px; vertical-align: middle;">
+      <img src="{{logo_path}}" alt="Logo" style="height: 100px;">
+    </td>
+    <td style="text-align: center; vertical-align: middle; font-size: 12px; line-height: 1.4;">
+      <strong style="font-size: 14px; color: #007b7b;">Hotel Melaque Puesta del Sol</strong><br>
+      Gómez Farías No. 31<br>
+      Tels. 315 355 5797 y 315 355 5777<br>
+      San Patricio Melaque, Jalisco. C.P. 48980
+    </td>
+    <td style="text-align: right; vertical-align: middle; font-size: 10px;">
+      Fecha: {{fecha_actual}}<br>
+      Habitación: {{habitacion}}<br>
+      Tarifa: ${{tarifa}}<br>
+      Noches: {{noches}}
+    </td>
+  </tr>
+</table>
+
+<div class="title">Formato de Recepción</div>
+
+<div class="section-title">Para ser llenado por el huésped</div>
+<table>
+  <tr><td>Nombre</td><td colspan="3">{{cliente}}</td></tr>
+  <tr><td>Domicilio</td><td>{{direccion}}</td><td>C.P.</td><td>{{cp}}</td></tr>
+  <tr><td>Ciudad</td><td>{{ciudad}}</td><td>Estado</td><td>{{estado}}</td></tr>
+  <tr><td>País</td><td>{{pais}}</td><td>Teléfono</td><td>{{telefono}}</td></tr>
+  <tr><td>Nacionalidad</td><td>{{nacionalidad}}</td><td>Automóvil</td><td>{{auto}}</td></tr>
+  <tr><td>Recepción atendió</td><td colspan="3">{{recepcionista}}</td></tr>
+</table>
+
+<div class="section-title">Nombres de las personas en la habitación</div>
+<table>
+  {{nombres_personas}}
+</table>
+
+<div class="section-title">Depósito en garantía / Artículos entregados</div>
+<table class="checkbox-group">
+  <tr>
+    {{check_loza}}
+    {{check_cafetera}}
+    {{check_licuadora}}
+    {{check_control_tv}}
+    {{check_control_aa}}
+    {{check_toallas}}
+  </tr>
+  <tr>
+    {{check_para_habitacion}}
+    {{check_para_alberca}}
+    <td>Otros: __________</td>
+    <td colspan="3">Fecha de salida: {{fecha_fin}}</td>
+  </tr>
+</table>
+
+<div class="firma">
+  ____________________________<br>
+  Firma del huésped
+</div>
+
+<div class="section-title">NOTAS IMPORTANTES / IMPORTANT NOTES</div>
+<table class="notes">
+  <tr>
+    <td style="width: 50%;">
+      1. El Hotel no se hace responsable por valores no dejados en recepción.<br>
+      2. El cobro inicia al entregar la habitación.<br>
+      3. Prohibido introducir animales o vendedores.<br>
+      4. En caso de cancelación se cobra el 30%.<br>
+      5. Acepto pagar $290 por toalla de alberca no devuelta.<br>
+      6. Conforme a ley de protección de datos.<br>
+      7. No se permite música grabada o en vivo.<br>
+      8. Prohibido fumar en todo el hotel.<br>
+      9. No se aceptan visitas no registradas.<br>
+    </td>
+    <td>
+      1. Hotel is not responsible for valuables not left at reception.<br>
+      2. Room charge starts when the room is delivered.<br>
+      3. Animals or vendors are not allowed.<br>
+      4. 30% charge applies for cancellations.<br>
+      5. I agree to pay $290 for each unreturned pool towel.<br>
+      6. Data privacy law applies.<br>
+      7. No recorded or live music allowed.<br>
+      8. Smoking is strictly prohibited.<br>
+      9. No unregistered guests allowed.<br>
+    </td>
+  </tr>
+</table>
+
+<div class="icons">
+  <i class="fas fa-ban"></i> No fumar
+  <i class="fas fa-dog"></i> No mascotas
+  <i class="fas fa-volume-mute"></i> No música
+</div>
+
+
+</body>
+</html>

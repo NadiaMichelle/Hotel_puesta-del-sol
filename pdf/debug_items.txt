@@ -1,0 +1,52 @@
+Array
+(
+    [loza] => Array
+        (
+            [name] => Loza (Utensils)
+            [delivered] => 
+            [price] => 200
+        )
+
+    [licuadora] => Array
+        (
+            [name] => Licuadora (Blender)
+            [delivered] => 
+            [price] => 200
+        )
+
+    [cafetera] => Array
+        (
+            [name] => Cafetera (Coffee Maker)
+            [delivered] => 
+            [price] => 200
+        )
+
+    [controltv] => Array
+        (
+            [name] => Control TV
+            [delivered] => 1
+            [price] => 0
+        )
+
+    [controlaa] => Array
+        (
+            [name] => Control AA
+            [delivered] => 1
+            [price] => 0
+        )
+
+    [toallashab] => Array
+        (
+            [name] => Toallas Habitación
+            [delivered] => 1
+            [price] => 0
+        )
+
+    [toallasalb] => Array
+        (
+            [name] => Toallas Alberca
+            [delivered] => 1
+            [price] => 0
+        )
+
+)
