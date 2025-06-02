@@ -267,7 +267,7 @@ slotLabelDidMount: function(info) {
                 id: res.id,
                 title: res.title,
                 start: res.start,
-                end: res.end,
+               end: res.end ? res.end.split('T')[0] + 'T16:00:00' : undefined,
                 color: res.color,
                 backgroundColor: '',
                 resourceId: res.resourceId,
@@ -600,6 +600,7 @@ async function openReservationModal(info = {}) {
         if (inapamCheck) inapamCheck.checked = props.inapamDiscount || false;
         safeSetValue('inapamCredential', props.inapamCredential || '');
         safeSetValue('inapamDiscountValue', props.inapamDiscountValue || '');
+        safeSetValue('inapamDiscountType', props.inapamDiscountType || 'porcentaje'); // 🧡 Aquí!
 
         // Notas y color
         safeSetValue('reservationNotes', props.notes || '');
@@ -673,6 +674,7 @@ function setupReservationModalEventListeners() {
     const reservationISHInput = document.getElementById('reservationISH');
     const inapamCheckbox = document.getElementById('inapamDiscount');
     const inapamDiscountValueInput = document.getElementById('inapamDiscountValue');
+
     const reservationGuestSelect = document.getElementById('reservationGuestSelect');
     const reservationStatusSelect = document.getElementById('reservationStatus');
     const addCheckinGuestBtn = document.getElementById('addCheckinGuestBtn');
@@ -1494,12 +1496,12 @@ async function handleReservationSubmit(event) {
     }
 
     // Preparar datos complejos
-    const anticipo = {
-        monto: formData.get('anticipo[monto]'),
-        metodo: formData.get('anticipo[metodo]'),
-        ticket: formData.get('anticipo[ticket]'),
-    };
-    
+   const anticipo = {
+  monto: document.getElementById('paymentAnticipoMonto')?.value || '',
+  metodo: document.getElementById('paymentAnticipoMetodo')?.value || '',
+  ticket: document.getElementById('paymentAnticipoTicket')?.value || '',
+};
+
     const verification = {
         dateTime: formData.get('verification[dateTime]'),
         whatsAppVerified: formData.get('verification[whatsAppVerified]'),
@@ -1582,6 +1584,7 @@ document.querySelectorAll('#pagosHotelContainer .additional-payment-row').forEac
             inapamDiscount: document.getElementById('inapamDiscount').checked,
             inapamCredential: formData.get('inapamCredential'),
             inapamDiscountValue: parseFloat(formData.get('inapamDiscountValue')) || 0,
+            inapamDiscountType: document.getElementById('inapamDiscountType')?.value || 'porcentaje',
             notes: formData.get('reservationNotes') || '',
             anticipo,
             verification,
@@ -1598,58 +1601,65 @@ document.querySelectorAll('#pagosHotelContainer .additional-payment-row').forEac
     try {
         const result = await saveReservation(reservationData);
     
-        if (result.success) {
-            closeReservationModal();
-            showAlert(currentEditingReservationId ? 'Reserva actualizada con éxito' : 'Reserva creada con éxito', 'success');
-    
-            const props = reservationData.extendedProps || {};
-    
-            if (currentEditingReservationId) {
-                // 🔄 Editar evento ya existente en el calendario
-                const event = calendarInstance.getEventById(currentEditingReservationId);
-                if (event) {
-                    event.setProp('title', reservationData.title);
-                    event.setStart(reservationData.start);
-                    event.setEnd(reservationData.end);
-                    event.setExtendedProp('guestId', props.guestId);
-                    event.setExtendedProp('guestNameManual', props.guestNameManual);
-                    event.setExtendedProp('status', props.status);
-                    event.setExtendedProp('rate', props.rate);
-                    event.setExtendedProp('iva', props.iva);
-                    event.setExtendedProp('ish', props.ish);
-                    event.setExtendedProp('inapamDiscount', props.inapamDiscount);
-                    event.setExtendedProp('inapamCredential', props.inapamCredential);
-                    event.setExtendedProp('inapamDiscountValue', props.inapamDiscountValue);
-                    event.setExtendedProp('notes', props.notes);
-                    event.setExtendedProp('anticipo', props.anticipo);
-                    event.setExtendedProp('verification', props.verification);
-                    event.setExtendedProp('pagosExtra', props.pagosExtra);
-                    event.setExtendedProp('checkinGuests', props.checkinGuests);
-                    event.setExtendedProp('checkinItems', props.checkinItems);
-                    event.setExtendedProp('receptionistName', props.receptionistName);
-                    event.setProp('backgroundColor', reservationData.color || statusColorMap[props.status] || statusColorMap['default']);
-                }
-            } else {
-                // ➕ Añadir nuevo evento
-                calendarInstance.addEvent({
-                    id: result.insert_id,
-                    title: reservationData.title,
-                    start: reservationData.start,
-                    end: reservationData.end,
-                    color: reservationData.color,
-                    resourceId: reservationData.resourceId,
-                    extendedProps: reservationData.extendedProps
-                });
-            }
-    
-        } else {
+ if (result.success) {
+    closeReservationModal();
+    showAlert(currentEditingReservationId ? 'Reserva actualizada con éxito' : 'Reserva creada con éxito', 'success');
+
+    const props = reservationData.extendedProps || {}; // ✅ Antes que cualquier uso
+
+    populateHotelPayments(props.pagosHotel || []);
+
+    if (currentEditingReservationId) {
+        // 🔄 Editar evento ya existente en el calendario
+        const event = calendarInstance.getEventById(currentEditingReservationId);
+        if (event) {
+            event.setProp('title', reservationData.title);
+            event.setStart(reservationData.start);
+            event.setEnd(reservationData.end);
+            event.setExtendedProp('guestId', props.guestId);
+            event.setExtendedProp('guestNameManual', props.guestNameManual);
+            event.setExtendedProp('status', props.status);
+            event.setExtendedProp('rate', props.rate);
+            event.setExtendedProp('iva', props.iva);
+            event.setExtendedProp('ish', props.ish);
+            event.setExtendedProp('inapamDiscount', props.inapamDiscount);
+            event.setExtendedProp('inapamCredential', props.inapamCredential);
+            event.setExtendedProp('inapamDiscountValue', props.inapamDiscountValue);
+            event.setExtendedProp('inapamDiscountType', props.inapamDiscountType);
+
+            event.setExtendedProp('notes', props.notes);
+            event.setExtendedProp('anticipo', props.anticipo);
+            event.setExtendedProp('verification', props.verification);
+            event.setExtendedProp('pagosExtra', props.pagosExtra);
+            event.setExtendedProp('checkinGuests', props.checkinGuests);
+            event.setExtendedProp('checkinItems', props.checkinItems);
+            event.setExtendedProp('receptionistName', props.receptionistName);
+            event.setProp('backgroundColor', reservationData.color || statusColorMap[props.status] || statusColorMap['default']);
+        }
+    } else {
+        // ➕ Añadir nuevo evento
+        calendarInstance.addEvent({
+            id: result.insert_id,
+            title: reservationData.title,
+            start: reservationData.start,
+            end: reservationData.end,
+            color: reservationData.color,
+            resourceId: reservationData.resourceId,
+            extendedProps: reservationData.extendedProps
+        });
+    }
+}
+ else {
             showAlert('Error al guardar la reserva: ' + (result.error || 'Error desconocido'), 'error');
         }
     } catch (error) {
         console.error('Error:', error);
         showAlert('Error al conectar con el servidor', 'error');
     }
-    
+   await renderCalendar()   
+   if (typeof cargarAnticipos === 'function') {
+    cargarAnticipos(); // Actualiza la tabla de anticipos dinámicamente
+}
 }
 
 // ==================== FUNCIONES AUXILIARES ====================
@@ -1935,8 +1945,8 @@ function renderReservationsSection() {
         </style>
     `;
 
- dynamicContentEl.style.display = 'block';
- calendarEl.style.display = 'none';
+    dynamicContentEl.style.display = 'block';
+    calendarEl.style.display = 'none';
 
     fetch('api/reservatsection.php?action=get_all')
         .then(response => response.json())
@@ -1949,7 +1959,7 @@ function renderReservationsSection() {
                     tbody.innerHTML = `<tr><td colspan="12" class="text-center">No hay reservas registradas.</td></tr>`;
                     return;
                 }
-            
+
                 data.data.forEach(reservation => {
                     const checkIn = new Date(reservation.start_date);
                     const checkOut = new Date(reservation.end_date);
@@ -1966,22 +1976,21 @@ function renderReservationsSection() {
                     const ishAmount = subtotal * (ish / 100);
                     const total = subtotal + ivaAmount + ishAmount - discount;
 
-                    // Pagado desde campo 'anticipo'
-                   const anticipo = reservation.anticipo && reservation.anticipo.monto ? parseFloat(reservation.anticipo.monto) : 0;
+                    // Anticipo y pagos extra
+                    const anticipo = reservation.anticipo && reservation.anticipo.monto ? parseFloat(reservation.anticipo.monto) : 0;
 
-                // Sumar todos los pagos extra
-                let pagosExtra = 0;
-                if (Array.isArray(reservation.pagosExtra)) {
-                    pagosExtra = reservation.pagosExtra.reduce((sum, pago) => {
-                        const monto = parseFloat(pago.monto || 0);
-                        return sum + (isNaN(monto) ? 0 : monto);
-                    }, 0);
-                }
+                    let pagosExtra = 0;
+                    if (Array.isArray(reservation.pagosExtra)) {
+                        pagosExtra = reservation.pagosExtra.reduce((sum, pago) => {
+                            const monto = parseFloat(pago.monto || 0);
+                            return sum + (isNaN(monto) ? 0 : monto);
+                        }, 0);
+                    }
 
                     const pagadoTotal = anticipo + pagosExtra;
                     const saldo = total - pagadoTotal;
 
-                    const ticket = reservation.anticipo && reservation.anticipo.ticket ? reservation.anticipo.ticket : '';
+                    const ticket = reservation.anticipo && reservation.anticipo.ticket ? reservation.anticipo.ticket : '—';
 
                     tbody.innerHTML += `
                         <tr>
@@ -1996,7 +2005,7 @@ function renderReservationsSection() {
                             <td>${ticket}</td>
                             <td>$${saldo.toFixed(2)}</td>
                             <td><span class="status-badge" style="background-color: ${reservation.color};">${reservation.status}</span></td>
-                            <td class="actions">
+                            <td>
                                 <button title="Imprimir PDF Admin" class="print-admin-btn" onclick="printPDFAdmin(${reservation.id})">
                                     <i class="fas fa-file-pdf"></i>
                                 </button>
@@ -2017,9 +2026,7 @@ function renderReservationsSection() {
             tbody.innerHTML = `<tr><td colspan="12" class="text-center text-danger">Error al cargar reservas.</td></tr>`;
             console.error('Fetch error:', err);
         });
-
-} 
-
+}
 // ==================== SECCIÓN DE AÑADIR USUARIO ====================
 
 
@@ -2334,6 +2341,10 @@ function openGuestModal() {
     const modal = document.getElementById('guestModal');
     if (modal) {
       modal.style.display = 'none';
+      modal.classList.remove('show');
+      document.body.classList.remove('modal-open');
+      const backdrop = document.querySelector('.modal-backdrop');
+      if (backdrop) backdrop.remove();
     }
   }
   document.getElementById('guestForm').addEventListener('submit', async function (e) {
@@ -2416,252 +2427,311 @@ window.applyReservationFilters = applyReservationFilters;
 function renderAnticiposSection() {
   window.renderAnticiposSection = renderAnticiposSection;
 
-  dynamicContentEl.innerHTML = `
+ dynamicContentEl.innerHTML = `
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h4 class="fw-bold text-orange"><i class="fas fa-search me-2"></i> Buscar Reservas</h4>
+  <div class="d-flex gap-2">
+    <input type="text" id="searchReservaNombre" class="form-control form-control-sm" placeholder="Buscar por nombre o fecha">
+    <button type="button" class="btn btn-sm btn-outline-orange" onclick="buscarYMostrarReservas()">
+      <i class="fas fa-search me-1"></i> Buscar
+    </button>
+  </div>
+</div>
+
+<!-- Aquí va el div de resultados -->
+<div id="resultadosReservas" class="mt-2"></div>
 
 
-    <div class="container mt-4">
-      <!-- 🔍 Buscador de reserva -->
-      <div class="mb-4">
-        <div class="d-flex gap-2">
-          <input type="text" id="searchReservaNombre" class="form-control" placeholder="Buscar por nombre o fecha">
-          <button type="button" class="btn btn-outline-orange" onclick="buscarYMostrarReservas()">
-            <i class="fas fa-search me-1"></i> Buscar Reserva
+  <!-- 🧾 Formulario de anticipo -->
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-gradient-orange text-white py-2">
+      <h6 class="mb-0 fw-bold"><i class="fas fa-receipt me-2"></i> Registrar Anticipo</h6>
+    </div>
+    <div class="card-body p-3">
+      <form id="formAnticipo" class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label">Nombre del huésped</label>
+          <input type="text" id="anticipoGuest" class="form-control form-control-sm" required>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">ID Reserva</label>
+          <input type="text" id="anticipoReserva" class="form-control form-control-sm">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Entrada</label>
+          <input type="date" id="entrada" class="form-control form-control-sm">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Salida</label>
+          <input type="date" id="salida" class="form-control form-control-sm">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Tipo Habitación</label>
+          <input type="text" id="tipoHabitacion" class="form-control form-control-sm">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Personas</label>
+          <input type="number" id="personas" class="form-control form-control-sm">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Tarifa</label>
+          <input type="number" step="0.01" id="tarifa" class="form-control form-control-sm">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Total</label>
+          <input type="number" step="0.01" id="total" class="form-control form-control-sm">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Anticipo</label>
+          <input type="number" step="0.01" id="anticipo" class="form-control form-control-sm" required oninput="calcularTotalPesos()">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Saldo</label>
+          <input type="number" step="0.01" id="saldo" class="form-control form-control-sm">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Método de pago</label>
+          <select id="metodo_pago" class="form-select form-select-sm" onchange="mostrarMonedaSiEsEfectivo()">
+            <option value="">Selecciona método...</option>
+            <option value="Efectivo">Efectivo</option>
+            <option value="Transferencia">Transferencia</option>
+            <option value="Tarjeta Débito">Tarjeta Débito</option>
+            <option value="Tarjeta Crédito">Tarjeta Crédito</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Tasa de cambio</label>
+          <input type="number" step="0.01" id="tasaCambio" class="form-control form-control-sm">
+        </div>
+        <div class="col-md-3 d-none" id="campoMoneda">
+          <label class="form-label">Moneda</label>
+          <select id="selectMoneda" class="form-select form-select-sm" onchange="actualizarTasaCambio()">
+            <option value="">Selecciona moneda</option>
+            <option value="USD">Dólar (USD)</option>
+            <option value="EUR">Euro (EUR)</option>
+            <option value="GBP">Libra esterlina (GBP)</option>
+            <option value="CAD">Dólar canadiense (CAD)</option>
+            <option value="JPY">Yen japonés (JPY)</option>
+            <option value="BRL">Real brasileño (BRL)</option>
+            <option value="ARS">Peso argentino (ARS)</option>
+            <option value="COP">Peso colombiano (COP)</option>
+            <option value="CLP">Peso chileno (CLP)</option>
+            <option value="MXN">Peso mexicano (MXN)</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Total en pesos (MXN)</label>
+          <input type="number" id="totalPesos" class="form-control form-control-sm" readonly>
+        </div>
+        <div class="col-md-12">
+          <label class="form-label">Observaciones</label>
+          <textarea id="observaciones" class="form-control form-control-sm" rows="2"></textarea>
+        </div>
+        <div class="col-12 text-end mt-3">
+          <button type="submit" class="btn btn-sm btn-outline-orange">
+            <i class="fas fa-save me-1"></i> Guardar Anticipo
           </button>
         </div>
-        <div id="resultadosReservas" class="mt-2"></div>
-      </div>
+      </form>
+    </div>
+  </div>
 
-      <!-- 🧾 Formulario de anticipo -->
-      <div class="card shadow-sm border-0 mb-4">
-        <div class="card-header bg-orange text-white">
-          <h5 class="mb-0 fw-bold"><i class="fas fa-receipt me-2"></i> Registrar Anticipo</h5>
-        </div>
-        <div class="card-body">
-          <form id="formAnticipo" class="row g-3">
-            <div class="col-md-4">
-              <label class="form-label">Nombre del huésped</label>
-              <input type="text" id="anticipoGuest" class="form-control" required>
-            </div>
-            <div class="col-md-2">
-              <label class="form-label">ID Reserva</label>
-              <input type="text" id="anticipoReserva" class="form-control">
-            </div>
-            <div class="col-md-2">
-              <label class="form-label">Entrada</label>
-              <input type="date" id="entrada" class="form-control">
-            </div>
-            <div class="col-md-2">
-              <label class="form-label">Salida</label>
-              <input type="date" id="salida" class="form-control">
-            </div>
-            <div class="col-md-2">
-              <label class="form-label">Tipo Habitación</label>
-              <input type="text" id="tipoHabitacion" class="form-control">
-            </div>
-            <div class="col-md-2">
-              <label class="form-label">Personas</label>
-              <input type="number" id="personas" class="form-control">
-            </div>
-            <div class="col-md-2">
-              <label class="form-label">Tarifa</label>
-              <input type="number" step="0.01" id="tarifa" class="form-control">
-            </div>
-            <div class="col-md-2">
-              <label class="form-label">Total</label>
-              <input type="number" step="0.01" id="total" class="form-control">
-            </div>
-            <div class="col-md-2">
-              <label class="form-label">Anticipo</label>
-              <input type="number" step="0.01" id="anticipo" class="form-control" required oninput="calcularTotalPesos()">
-            </div>
-            <div class="col-md-2">
-              <label class="form-label">Saldo</label>
-              <input type="number" step="0.01" id="saldo" class="form-control">
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">Método de pago</label>
-              <select id="metodo_pago" class="form-select" onchange="mostrarMonedaSiEsEfectivo()">
-                <option value="">Selecciona método...</option>
-                <option value="Efectivo">Efectivo</option>
-                <option value="Transferencia">Transferencia</option>
-                <option value="Tarjeta Débito">Tarjeta Débito</option>
-                <option value="Tarjeta Crédito">Tarjeta Crédito</option>
-              </select>
-            </div>
-            <div class="col-md-2">
-              <label class="form-label">Tasa de cambio</label>
-              <input type="number" step="0.01" id="tasaCambio" class="form-control">
-            </div>
-            <div class="col-md-3 d-none" id="campoMoneda">
-              <label class="form-label">Moneda</label>
-              <select id="selectMoneda" class="form-select" onchange="actualizarTasaCambio()">
-                <option value="">Selecciona moneda</option>
-                <option value="USD">Dólar (USD)</option>
-                <option value="EUR">Euro (EUR)</option>
-                <option value="GBP">Libra esterlina (GBP)</option>
-                <option value="CAD">Dólar canadiense (CAD)</option>
-                <option value="JPY">Yen japonés (JPY)</option>
-                <option value="BRL">Real brasileño (BRL)</option>
-                <option value="ARS">Peso argentino (ARS)</option>
-                <option value="COP">Peso colombiano (COP)</option>
-                <option value="CLP">Peso chileno (CLP)</option>
-                <option value="MXN">Peso mexicano (MXN)</option>
-              </select>
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">Total en pesos (MXN)</label>
-              <input type="number" id="totalPesos" class="form-control" readonly>
-            </div>
-            <div class="col-md-12">
-              <label class="form-label">Observaciones</label>
-              <textarea id="observaciones" class="form-control" rows="2"></textarea>
-            </div>
-            <div class="col-12 text-end mt-3">
-              <button type="submit" class="btn btn-outline-orange">
-                <i class="fas fa-save me-1"></i> Guardar Anticipo
-              </button>
-            </div>
-          </form>
-        </div>
+  <!-- 📋 Tabla de anticipos -->
+  <div class="card shadow-sm border-0">
+    <div class="card-header bg-gradient-orange text-white py-2">
+      <h6 class="mb-0 fw-bold"><i class="fas fa-coins me-2"></i> Anticipos Registrados</h6>
+    </div>
+    <div class="card-body p-3">
+      <div class="d-flex gap-2 mb-3">
+        <input type="text" id="filtroNombre" class="form-control form-control-sm" placeholder="Filtrar por huésped" oninput="filtrarAnticipos()">
+        <input type="date" id="filtroFecha" class="form-control form-control-sm" onchange="filtrarAnticipos()">
       </div>
+      <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle text-center">
+          <thead class="table-light">
+            <tr>
+              <th>#</th>
+              <th>Huésped</th>
+              <th>Anticipo</th>
+              <th>Método</th>
+              <th>Tasa</th>
+              <th>Total MXN</th>
+              <th>Fecha</th>
+              <th>Imprimir</th>
+            </tr>
+          </thead>
+          <tbody id="tablaAnticiposBody">
+            <!-- JS Insertará datos -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 
-      <!-- 📋 Tabla de anticipos -->
-      <div class="card shadow-sm border-0">
-        <div class="card-header bg-light d-flex justify-content-between align-items-center">
-          <h6 class="mb-0"><i class="fas fa-coins me-2"></i> Anticipos registrados</h6>
-          <div class="d-flex gap-2">
-            <input type="text" id="filtroNombre" class="form-control form-control-sm" placeholder="Nombre" oninput="filtrarAnticipos()">
-            <input type="date" id="filtroFecha" class="form-control form-control-sm" onchange="filtrarAnticipos()">
+  <!-- 🧾 Modal Detalle Anticipo -->
+  <div class="modal fade" id="modalDetalleAnticipo" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-md">
+      <div class="modal-content border-0">
+        <div class="modal-header bg-orange text-white">
+          <h5 class="modal-title fw-bold"><i class="fas fa-file-alt me-2"></i> Detalle del Anticipo</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body px-4 py-3">
+          <div class="row g-2">
+            <div class="col-12">
+              <label class="form-label fw-semibold mb-0">Huésped:</label>
+              <div id="modalGuest" class="text-muted small"></div>
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-semibold mb-0">Reserva:</label>
+              <div id="modalReserva" class="text-muted small"></div>
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-semibold mb-0">Fecha:</label>
+              <div id="modalFecha" class="text-muted small"></div>
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-semibold mb-0">Método de pago:</label>
+              <div id="modalMetodo" class="text-muted small"></div>
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-semibold mb-0">Tasa de cambio:</label>
+              <div id="modalTasa" class="text-muted small"></div>
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-semibold mb-0">Anticipo:</label>
+              <div id="modalAnticipo" class="text-muted small"></div>
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-semibold mb-0">Total en pesos (MXN):</label>
+              <div id="modalTotal" class="text-muted small"></div>
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold mb-0">Observaciones:</label>
+              <div id="modalObs" class="text-muted small"></div>
+            </div>
           </div>
         </div>
-        <div class="table-responsive">
-          <table class="table table-sm table-hover mb-0">
-            <thead class="table-light text-center">
-              <tr>
-                <th>#</th>
-                <th>Huésped</th>
-                <th>Anticipo</th>
-                <th>Método</th>
-                <th>Tasa</th>
-                <th>Total MXN</th>
-                <th>Fecha</th>
-                <th>Imprimir</th>
-              </tr>
-            </thead>
-            <tbody id="tablaAnticiposBody" class="text-center">
-              <!-- JS Insertará datos -->
-            </tbody>
-          </table>
+        <div class="modal-footer border-top-0 px-4 pb-3">
+          <button class="btn btn-outline-orange w-100" id="btnVerRecibo">
+            <i class="fas fa-print me-2"></i> Ver Recibo PDF
+          </button>
         </div>
       </div>
+    </div>
+  </div>
 <style>
+  /* Colores base */
+  :root {
+    --naranja-primario: #e67e22;
+    --naranja-oscuro: #d35400;
+    --naranja-claro: #fef5e7;
+    --naranja-hover: #fff2e6;
+  }
+
+  /* Textos y botones */
+  .text-orange {
+    color: var(--naranja-primario) !important;
+  }
+  .bg-orange {
+    background-color: var(--naranja-primario) !important;
+  }
+  .bg-gradient-orange {
+    background: linear-gradient(135deg, var(--naranja-primario), var(--naranja-oscuro));
+    color: white !important;
+  }
+  .btn-outline-orange {
+    color: var(--naranja-primario);
+    border-color: var(--naranja-primario);
+  }
+  .btn-outline-orange:hover {
+    background-color: var(--naranja-primario);
+    color: white;
+  }
+
+  /* Formularios */
+  .form-control:focus, .form-select:focus {
+    border-color: var(--naranja-primario);
+    box-shadow: 0 0 0 0.2rem rgba(230, 126, 34, 0.25);
+  }
+  .form-label {
+    color: var(--naranja-oscuro);
+    font-weight: 600;
+  }
+
+  /* Card */
+  .card {
+    border-radius: 10px;
+    overflow: hidden;
+    border: none;
+  }
+  .card-header {
+    background-color: var(--naranja-primario);
+    color: white;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+  }
+
+  /* Tabla */
+  .table thead {
+    background-color: var(--naranja-claro);
+    color: var(--naranja-oscuro);
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+  }
+  .table-hover tbody tr:hover {
+    background-color: var(--naranja-hover);
+  }
+  .table th, .table td {
+    padding: 0.5rem;
+  }
+
+  /* Modal */
   .modal-content {
     border-radius: 10px;
     border: none;
     background-color: #fffaf5;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
   }
-
   .modal-header.bg-orange {
-    background-color: #e67e22;
+    background-color: var(--naranja-primario);
     color: white;
-    border-bottom: none;
-    border-top-left-radius: 10px;
-    border-top-right-radius: 10px;
   }
-
   .modal-header .btn-close {
     filter: invert(1);
   }
 
-  .modal-body label.form-label {
-    color: #333;
-    font-weight: 600;
-    font-size: 0.95rem;
+  /* Títulos */
+  h4, h5, h6 {
+    font-weight: 700;
   }
 
-  .modal-body .text-muted {
-    color: #444 !important;
-    font-size: 0.9rem;
+  /* Buscador */
+  .form-control-sm, .form-select-sm {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.6rem;
   }
+    /* Corrección de capas del modal y el fondo */
+.modal-backdrop.show {
+  background-color: rgba(0, 0, 0, 0.4); /* Transparencia bonita */
+  z-index: 1040 !important;
+}
 
-  #btnVerRecibo {
-    border-color: #e67e22;
-    color: #e67e22;
-    font-weight: 500;
-  }
+.modal {
+  z-index: 1050 !important;
+}
 
-  #btnVerRecibo:hover {
-    background-color: #e67e22;
-    color: white;
-  }
+.modal-content {
+  z-index: 1055 !important;
+  position: relative;
+}
 
-  .modal-backdrop.show {
-    background-color: rgba(0, 0, 0, 0.3);
-  }
-
-  .modal {
-    z-index: 1050 !important;
-  }
-
-  .modal-backdrop {
-    z-index: 1040 !important;
-  }
 </style>
 
-  <div class="modal fade" id="modalDetalleAnticipo" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-md">
-    <div class="modal-content border-0" style="border-radius: 10px;">
-      <div class="modal-header bg-orange text-white">
-        <h5 class="modal-title fw-bold"><i class="fas fa-file-alt me-2"></i>Detalle del Anticipo</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body px-4 py-3">
-        <div class="row g-2">
-          <div class="col-12">
-            <label class="form-label fw-semibold mb-0">Huésped:</label>
-            <div id="modalGuest" class="text-muted small"></div>
-          </div>
-          <div class="col-6">
-            <label class="form-label fw-semibold mb-0">Reserva:</label>
-            <div id="modalReserva" class="text-muted small"></div>
-          </div>
-          <div class="col-6">
-            <label class="form-label fw-semibold mb-0">Fecha:</label>
-            <div id="modalFecha" class="text-muted small"></div>
-          </div>
-          <div class="col-6">
-            <label class="form-label fw-semibold mb-0">Método de pago:</label>
-            <div id="modalMetodo" class="text-muted small"></div>
-          </div>
-          <div class="col-6">
-            <label class="form-label fw-semibold mb-0">Tasa de cambio:</label>
-            <div id="modalTasa" class="text-muted small"></div>
-          </div>
-          <div class="col-6">
-            <label class="form-label fw-semibold mb-0">Anticipo:</label>
-            <div id="modalAnticipo" class="text-muted small"></div>
-          </div>
-          <div class="col-6">
-            <label class="form-label fw-semibold mb-0">Total en pesos (MXN):</label>
-            <div id="modalTotal" class="text-muted small"></div>
-          </div>
-          <div class="col-12">
-            <label class="form-label fw-semibold mb-0">Observaciones:</label>
-            <div id="modalObs" class="text-muted small"></div>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer border-top-0 px-4 pb-3">
-        <button class="btn btn-outline-orange w-100" id="btnVerRecibo">
-          <i class="fas fa-print me-2"></i> Ver Recibo PDF
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
-  `;
+`;
 
   dynamicContentEl.style.display = 'block';
   calendarEl.style.display = 'none';
@@ -2672,10 +2742,9 @@ function renderAnticiposSection() {
   cargarAnticipos();
 
 
-
  // Fin renderAnticiposSection
 
-  document.getElementById('formAnticipo').addEventListener('submit', async (e) => {
+ document.getElementById('formAnticipo').addEventListener('submit', async (e) => {
     e.preventDefault();
 
     const data = {
@@ -2692,9 +2761,8 @@ function renderAnticiposSection() {
       observaciones: document.getElementById('observaciones').value,
       fecha: new Date().toISOString().slice(0, 10),
       metodo_pago: document.getElementById('metodo_pago').value,
-      moneda: document.getElementById('selectMoneda').value,
-     tasaCambio: document.getElementById('tasaCambio').value,
-
+      selectMoneda: document.getElementById("selectMoneda").value,
+      tasaCambio: document.getElementById('tasaCambio').value,
     };
 
     if (!data.guest || !data.reserva || !data.anticipo || !data.metodo_pago) {
@@ -2712,6 +2780,7 @@ function renderAnticiposSection() {
       const result = await res.json();
       if (result.success) {
         alert('✅ Anticipo registrado exitosamente');
+        cargarAnticipos(); // Recargar la tabla al guardar
       } else {
         alert('❌ Error al registrar anticipo');
       }
@@ -2719,10 +2788,8 @@ function renderAnticiposSection() {
       alert('❌ Error de red');
       console.error(error);
     }
+  });
 
-
-});
-}
   window.printAnticipoDesdeFormulario = function () {
     const reservaId = document.getElementById('anticipoReserva').value;
     if (reservaId) {
@@ -2731,7 +2798,7 @@ function renderAnticiposSection() {
       alert("Especifica el ID de la reserva para imprimir el recibo");
     }
   };
-
+}
   window.buscarYMostrarReservas = async function () {
     const query = document.getElementById('searchReservaNombre').value.toLowerCase();
     const contenedor = document.getElementById('resultadosReservas');
@@ -2772,61 +2839,62 @@ function renderAnticiposSection() {
   };
 
 window.llenarFormularioReserva = function (reserva) {
+  console.log('Reserva seleccionada:', reserva);
+
   // Datos básicos
   document.getElementById('anticipoGuest').value = reserva.guestNameManual || '';
   document.getElementById('anticipoReserva').value = reserva.id || '';
-  document.getElementById('entrada').value = reserva.start || ''; // O start_date según tu campo
-  document.getElementById('salida').value = reserva.end || '';    // O end_date según tu campo
+  document.getElementById('entrada').value = reserva.start_date || '';
+  document.getElementById('salida').value = reserva.end_date || '';
   document.getElementById('tipoHabitacion').value = reserva.resourceId || '';
-  document.getElementById('tarifa').value = reserva.extendedProps.rate || '';
+  document.getElementById('personas').value = reserva.guestId || '';
+ document.getElementById('tarifa').value = reserva.rate || '';
+ 
 
-  // Calcular total reserva
-  const noches = Math.ceil(
-    (new Date(reserva.end) - new Date(reserva.start)) / (1000 * 60 * 60 * 24)
-  );
-  const rate = parseFloat(reserva.extendedProps.rate || 0);
-  const iva = parseFloat(reserva.extendedProps.iva || 0);
-  const ish = parseFloat(reserva.extendedProps.ish || 0);
-  const discount = reserva.extendedProps.inapamDiscount ? parseFloat(reserva.extendedProps.inapamDiscountValue || 0) : 0;
 
-  const subtotal = noches * rate;
-  const ivaMonto = subtotal * (iva / 100);
-  const ishMonto = subtotal * (ish / 100);
-  const totalReserva = subtotal + ivaMonto + ishMonto - discount;
 
-  // Total anticipos (de la base de datos)
-  const anticipos = parseFloat(reserva.extendedProps.total_anticipos || 0);
 
-  // Total pagos extra
-  let pagosExtra = 0;
-  if (Array.isArray(reserva.extendedProps.pagosExtra)) {
-    pagosExtra = reserva.extendedProps.pagosExtra.reduce((sum, pago) => {
-      const monto = parseFloat(pago.monto || 0);
-      return sum + (isNaN(monto) ? 0 : monto);
-    }, 0);
+  const totalReserva = parseFloat(reserva.totalReserva || 0);
+  document.getElementById('total').value = totalReserva.toFixed(2);
+
+  let totalPagado = 0;
+
+  try {
+    if (reserva.anticipo) {
+      const anticipo = typeof reserva.anticipo === 'string' ? JSON.parse(reserva.anticipo) : reserva.anticipo;
+      totalPagado += parseFloat(anticipo.monto || 0);
+    }
+  } catch (err) {
+    console.warn('Error en anticipo:', err);
   }
 
-  // Total pagado = anticipos + pagos extra
-  const totalPagado = anticipos + pagosExtra;
+  try {
+    if (reserva.pagosHotel) {
+      const pagosHotel = typeof reserva.pagosHotel === 'string' ? JSON.parse(reserva.pagosHotel) : reserva.pagosHotel;
+      pagosHotel.forEach(p => totalPagado += parseFloat(p.monto || 0));
+    }
+  } catch (err) {
+    console.warn('Error en pagosHotel:', err);
+  }
 
-  // Saldo pendiente
+  try {
+    if (reserva.pagosExtra) {
+      const pagosExtra = typeof reserva.pagosExtra === 'string' ? JSON.parse(reserva.pagosExtra) : reserva.pagosExtra;
+      pagosExtra.forEach(p => totalPagado += parseFloat(p.monto || 0));
+    }
+  } catch (err) {
+    console.warn('Error en pagosExtra:', err);
+  }
+
   const saldo = totalReserva - totalPagado;
-
-  // Mostrar en los campos del modal
-  document.getElementById('total').value = totalReserva.toFixed(2);
   document.getElementById('saldo').value = saldo.toFixed(2);
 
-  // Opcional: muestra desgloses si tienes esos campos en el modal
-  const campoAnticipos = document.getElementById('totalAnticipos');
-  if (campoAnticipos) campoAnticipos.value = anticipos.toFixed(2);
-
-  const campoPagosExtra = document.getElementById('totalPagosExtra');
-  if (campoPagosExtra) campoPagosExtra.value = pagosExtra.toFixed(2);
-
-  const campoTotalPagado = document.getElementById('totalPagado');
-  if (campoTotalPagado) campoTotalPagado.value = totalPagado.toFixed(2);
+  // Limpiar campos de pago
+  document.getElementById('metodo_pago').value = '';
+  document.getElementById('selectMoneda').value = '';
+  document.getElementById('tasaCambio').value = '';
+  document.getElementById('totalPesos').value = '';
 };
-
 
 
 let anticiposGlobal = [];
@@ -2939,8 +3007,6 @@ window.actualizarTasaCambio = async function () {
     alert('❌ Error de red al obtener la tasa.');
   }
 };
-
-
 
 
 window.calcularTotalPesos = function () {

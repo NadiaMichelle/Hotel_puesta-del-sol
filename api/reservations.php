@@ -22,6 +22,14 @@ if ($action === 'get_all') {
         $reservations = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         $formatted = array_map(function ($res) {
+            // Decodificar anticipos aquí, antes del return:
+            $res['anticipo'] = json_decode($res['anticipo'] ?? '{}', true);
+            $res['pagosHotel'] = json_decode($res['pagosHotel'] ?? '[]', true);
+            $res['pagosExtra'] = json_decode($res['pagosExtra'] ?? '[]', true);
+            $res['verification'] = json_decode($res['verification'] ?? '{}', true);
+            $res['checkinGuests'] = json_decode($res['checkinGuests'] ?? '[]', true);
+            $res['checkinItems'] = json_decode($res['checkinItems'] ?? '{}', true);
+
             return [
                 'id' => $res['id'],
                 'title' => $res['title'],
@@ -39,13 +47,14 @@ if ($action === 'get_all') {
                     'inapamDiscount' => boolval($res['inapamDiscount']),
                     'inapamCredential' => $res['inapamCredential'],
                     'inapamDiscountValue' => floatval($res['inapamDiscountValue']),
+                    'inapamDiscountType' => $res['inapamDiscountType'] ?? 'porcentaje',
                     'notes' => $res['notes'],
-                    'anticipo' => json_decode($res['anticipo'] ?? '{}'),
-                    'pagosHotel' => json_decode($res['pagosHotel'] ?? '[]'),
-                    'pagosExtra' => json_decode($res['pagosExtra'] ?? '[]'),
-                    'verification' => json_decode($res['verification'] ?? '{}'),
-                    'checkinGuests' => json_decode($res['checkinGuests'] ?? '[]'),
-                    'checkinItems' => json_decode($res['checkinItems'] ?? '{}'),
+                    'anticipo' => $res['anticipo'],
+                    'pagosHotel' => $res['pagosHotel'],
+                    'pagosExtra' => $res['pagosExtra'],
+                    'verification' => $res['verification'],
+                    'checkinGuests' => $res['checkinGuests'],
+                    'checkinItems' => $res['checkinItems'],
                     'receptionistName' => $res['receptionistName'],
                     'totalReserva' => floatval($res['totalReserva']),
                 ]
@@ -58,6 +67,7 @@ if ($action === 'get_all') {
     }
     exit;
 }
+
 
 if ($action === 'add' || $action === 'update') {
     $json = file_get_contents('php://input');
@@ -87,12 +97,14 @@ if ($action === 'add' || $action === 'update') {
     $inapam = $data['extendedProps']['inapamDiscount'] ? 1 : 0;
     $inapamValue = floatval($data['extendedProps']['inapamDiscountValue'] ?? 0);
     $inapamCredential = $data['extendedProps']['inapamCredential'] ?? '';
+    $inapamDiscountType = $data['extendedProps']['inapamDiscountType'] ?? 'porcentaje'; // Añadido
     $notes = $data['extendedProps']['notes'] ?? '';
     $guestId = $data['extendedProps']['guestId'] ?? null;
     $guestNameManual = $data['extendedProps']['guestNameManual'] ?? null;
     $receptionistName = $data['extendedProps']['receptionistName'] ?? '';
 
     $anticipo = json_encode($data['extendedProps']['anticipo'] ?? []);
+
     $pagosHotel = json_encode($data['extendedProps']['pagosHotel'] ?? []);
     $pagosExtra = json_encode($data['extendedProps']['pagosExtra'] ?? []);
     $verification = json_encode($data['extendedProps']['verification'] ?? []);
@@ -107,15 +119,15 @@ if ($action === 'add' || $action === 'update') {
             $stmt = $pdo->prepare("INSERT INTO reservations (
                 resourceId, title, start_date, end_date, color,
                 guestId, guestNameManual, status, rate, iva, ish,
-                inapamDiscount, inapamCredential, inapamDiscountValue, notes,
+                inapamDiscount, inapamCredential, inapamDiscountValue, inapamDiscountType, notes,
                 anticipo, pagosHotel, pagosExtra, verification, checkinGuests, checkinItems, receptionistName, totalReserva,
                 created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())");
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())");
 
             $stmt->execute([
                 $roomId, $title, $checkIn, $checkOut, $color,
                 $guestId, $guestNameManual, $estado, $rate, $iva, $ish,
-                $inapam, $inapamCredential, $inapamValue, $notes,
+                $inapam, $inapamCredential, $inapamValue, $inapamDiscountType, $notes,
                 $anticipo, $pagosHotel, $pagosExtra, $verification, $checkinGuests, $checkinItems, $receptionistName, $totalReserva
             ]);
 
@@ -129,7 +141,7 @@ if ($action === 'add' || $action === 'update') {
             $stmt = $pdo->prepare("UPDATE reservations SET
                 resourceId = ?, title = ?, start_date = ?, end_date = ?, color = ?,
                 guestId = ?, guestNameManual = ?, status = ?, rate = ?, iva = ?, ish = ?,
-                inapamDiscount = ?, inapamCredential = ?, inapamDiscountValue = ?, notes = ?,
+                inapamDiscount = ?, inapamCredential = ?, inapamDiscountValue = ?, inapamDiscountType = ?, notes = ?,
                 anticipo = ?, pagosHotel = ?, pagosExtra = ?, verification = ?, checkinGuests = ?, checkinItems = ?, receptionistName = ?, totalReserva = ?,
                 updated_at = NOW()
                 WHERE id = ?");
@@ -137,7 +149,7 @@ if ($action === 'add' || $action === 'update') {
             $stmt->execute([
                 $roomId, $title, $checkIn, $checkOut, $color,
                 $guestId, $guestNameManual, $estado, $rate, $iva, $ish,
-                $inapam, $inapamCredential, $inapamValue, $notes,
+                $inapam, $inapamCredential, $inapamValue, $inapamDiscountType, $notes,
                 $anticipo, $pagosHotel, $pagosExtra, $verification, $checkinGuests, $checkinItems, $receptionistName, $totalReserva,
                 $data['id']
             ]);
@@ -150,3 +162,4 @@ if ($action === 'add' || $action === 'update') {
 
     exit;
 }
+?>

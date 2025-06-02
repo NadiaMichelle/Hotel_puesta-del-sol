@@ -63,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         .login-box h2 {
             margin-bottom: 20px;
             font-weight: bold;
-            color: #2c3e50;
+            color:rgb(84, 73, 32);
         }
 
         .form-control {

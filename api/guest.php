@@ -8,11 +8,10 @@ if (!function_exists('isAuthenticated') || !isAuthenticated()) {
 }
 
 $action = $_GET['action'] ?? null;
-
 try {
     switch ($action) {
         case 'get_all':
-            $stmt = $pdo->query("SELECT id, nombre, nacionalidad, telefono FROM guests ORDER BY nombre");
+            $stmt = $pdo->query("SELECT id, nombre, nacionalidad, telefono, auto FROM guests ORDER BY nombre");
             echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
             break;
 
@@ -21,11 +20,11 @@ try {
                 echo json_encode(['success' => false, 'message' => 'ID no proporcionado']);
                 exit;
             }
-            
+
             $stmt = $pdo->prepare("SELECT * FROM guests WHERE id = ?");
             $stmt->execute([$_GET['id']]);
             $guest = $stmt->fetch(PDO::FETCH_ASSOC);
-            
+
             if ($guest) {
                 echo json_encode($guest);
             } else {
@@ -34,37 +33,60 @@ try {
             break;
 
         case 'add':
-            $json = file_get_contents('php://input');
-            $data = json_decode($json, true);
-            
-            if (!$data || empty($data['nombre'])) {
-                echo json_encode(['success' => false, 'message' => 'Datos inválidos']);
+            $nombre = $_POST['guestName'] ?? '';
+            $nacionalidad = $_POST['guestNationality'] ?? '';
+            $telefono = $_POST['guestPhone'] ?? '';
+            $calle = $_POST['guestAddress'] ?? '';
+            $ciudad = $_POST['guestCity'] ?? '';
+            $estado = $_POST['guestState'] ?? '';
+            $auto = $_POST['guestCar'] ?? '';
+            $cp = $_POST['guestPostalCode'] ?? '';
+            $rfc = $_POST['guestRFC'] ?? '';
+            $email = $_POST['guestEmail'] ?? '';
+
+            if (empty($nombre)) {
+                echo json_encode(['success' => false, 'message' => 'El nombre es obligatorio']);
                 exit;
             }
-            
-            $stmt = $pdo->prepare("INSERT INTO guests (nombre, nacionalidad, calle, ciudad, estado, cp, telefono, rfc, email) 
-                                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->execute([
-                $data['nombre'] ?? '',
-                $data['nacionalidad'] ?? '',
-                $data['calle'] ?? '',
-                $data['ciudad'] ?? '',
-                $data['estado'] ?? '',
-                $data['cp'] ?? '',
-                $data['telefono'] ?? '',
-                $data['rfc'] ?? '',
-                $data['email'] ?? ''
-            ]);
-            
+
+            $stmt = $pdo->prepare("INSERT INTO guests (nombre, nacionalidad, telefono, calle, ciudad, estado, cp, rfc, email, auto)
+                                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$nombre, $nacionalidad, $telefono, $calle, $ciudad, $estado, $cp, $rfc, $email, $auto]);
+
             echo json_encode([
                 'success' => true,
                 'id' => $pdo->lastInsertId(),
-                'message' => 'Huésped creado'
+                'message' => 'Huésped creado correctamente'
             ]);
             break;
 
         case 'update':
-            // Similar a 'add' pero con UPDATE
+            if (!isset($_POST['id'])) {
+                echo json_encode(['success' => false, 'message' => 'ID no proporcionado']);
+                exit;
+            }
+
+            $id = $_POST['id'];
+            $nombre = $_POST['guestName'] ?? '';
+            $nacionalidad = $_POST['guestNationality'] ?? '';
+            $telefono = $_POST['guestPhone'] ?? '';
+            $calle = $_POST['guestAddress'] ?? '';
+            $ciudad = $_POST['guestCity'] ?? '';
+            $estado = $_POST['guestState'] ?? '';
+            $auto = $_POST['guestCar'] ?? '';
+            $cp = $_POST['guestPostalCode'] ?? '';
+            $rfc = $_POST['guestRFC'] ?? '';
+            $email = $_POST['guestEmail'] ?? '';
+
+            if (empty($nombre)) {
+                echo json_encode(['success' => false, 'message' => 'El nombre es obligatorio']);
+                exit;
+            }
+
+            $stmt = $pdo->prepare("UPDATE guests SET nombre = ?, nacionalidad = ?, telefono = ?, calle = ?, ciudad = ?, estado = ?, cp = ?, rfc = ?, email = ?, auto = ? WHERE id = ?");
+            $stmt->execute([$nombre, $nacionalidad, $telefono, $calle, $ciudad, $estado, $cp, $rfc, $email, $auto, $id]);
+
+            echo json_encode(['success' => true, 'message' => 'Huésped actualizado correctamente']);
             break;
 
         case 'delete':
@@ -72,10 +94,10 @@ try {
                 echo json_encode(['success' => false, 'message' => 'ID no proporcionado']);
                 exit;
             }
-            
+
             $stmt = $pdo->prepare("DELETE FROM guests WHERE id = ?");
             $stmt->execute([$_GET['id']]);
-            
+
             echo json_encode(['success' => true, 'message' => 'Huésped eliminado']);
             break;
 

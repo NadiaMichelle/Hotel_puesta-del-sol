@@ -11,9 +11,8 @@ $stmt->execute([$id]);
 $res = $stmt->fetch(PDO::FETCH_ASSOC);
 if (!$res) die("Reserva no encontrada");
 
-//Nombre huesped
+// Nombre huésped
 $nombreCliente = preg_replace('/[^A-Za-z0-9 _-]/', '', $res['guestNameManual'] ?? 'Reserva');
-
 
 // Datos del huésped
 $guest = null;
@@ -22,11 +21,15 @@ if (!empty($res['guestId'])) {
     $stmtG->execute([$res['guestId']]);
     $guest = $stmtG->fetch(PDO::FETCH_ASSOC);
 }
+
+// Logo
 $logo_path = __DIR__ . '/../assets/img/logo.png';
 $logo_base64 = '';
 if (file_exists($logo_path)) {
     $logo_data = file_get_contents($logo_path);
     $logo_base64 = 'data:image/png;base64,' . base64_encode($logo_data);
+} else {
+    $logo_base64 = 'https://via.placeholder.com/80x80.png?text=LOGO';
 }
 
 // Cálculos
@@ -43,9 +46,19 @@ $ishMonto = $subtotal * ($ish / 100);
 $inapam = $res['inapamDiscount'] ? floatval($res['inapamDiscountValue']) : 0;
 $total = $subtotal + $ivaMonto + $ishMonto - $inapam;
 
+$status = strtoupper(trim($res['status'] ?? ''));
+$statusClass = 'status-activa'; // Default
+
+if ($status === 'CANCELADA') {
+    $statusClass = 'status-cancelada';
+} elseif ($status === 'PENDIENTE') {
+    $statusClass = 'status-pendiente';
+}
+
+
 // Anticipo
 $anticipo = json_decode($res['anticipo'], true);
-$anticipoMonto = isset($anticipo['monto']) ? floatval($anticipo['monto']) : 0;
+$anticipoMonto = is_numeric($anticipo['monto'] ?? null) ? floatval($anticipo['monto']) : 0;
 $anticipoMetodo = $anticipo['metodo'] ?? '';
 
 // Pagos extra
@@ -54,15 +67,19 @@ $pagado = $anticipoMonto;
 $filasPagos = '';
 if (is_array($pagosExtra)) {
     foreach ($pagosExtra as $p) {
-        $pagado += floatval($p['monto']);
+        $montoPago = is_numeric($p['monto'] ?? null) ? floatval($p['monto']) : 0;
+        $pagado += $montoPago;
         $filasPagos .= "<tr>
-            <td>$" . number_format($p['monto'], 2) . "</td>
-            <td>" . htmlspecialchars($p['metodo']) . "</td>
-            <td>" . htmlspecialchars($p['clave']) . "</td>
-            <td>" . htmlspecialchars($p['autorizacion']) . "</td>
-            <td>" . htmlspecialchars($p['fecha']) . "</td>
+            <td>$" . number_format($montoPago, 2) . "</td>
+            <td>" . htmlspecialchars($p['metodo'] ?? '') . "</td>
+            <td>" . htmlspecialchars($p['clave'] ?? '') . "</td>
+            <td>" . htmlspecialchars($p['autorizacion'] ?? '') . "</td>
+            <td>" . htmlspecialchars($p['fecha'] ?? '') . "</td>
         </tr>";
     }
+}
+if (empty($filasPagos)) {
+    $filasPagos = '<tr><td colspan="5" style="text-align:center;">No hay pagos registrados</td></tr>';
 }
 
 // Verificación
@@ -80,27 +97,33 @@ $reemplazos = [
     "{{telefono}}" => $guest['telefono'] ?? '',
     "{{email}}" => $guest['email'] ?? '',
     "{{nacionalidad}}" => $guest['nacionalidad'] ?? '',
+    "{{direccion}}" => $guest['calle'] ?? '',
+    "{{ciudad}}" => $guest['ciudad'] ?? '',
+    "{{estado}}" => $guest['estado'] ?? '',
+    "{{cp}}" => $guest['cp'] ?? '',
+    "{{rfc}}" => $guest['rfc'] ?? '',
+    "{{auto}}" => $guest['auto'] ?? '',
     "{{habitacion}}" => $res['resourceId'],
     "{{fecha_inicio}}" => $res['start_date'],
     "{{fecha_fin}}" => $res['end_date'],
     "{{noches}}" => $noches,
-    "{{anticipo_monto}}" => number_format($anticipoMonto, 2),
+    "{{anticipo_monto}}" => is_numeric($anticipoMonto) ? number_format($anticipoMonto, 2) : '—',
     "{{anticipo_metodo}}" => $anticipoMetodo,
     "{{filas_pagos}}" => $filasPagos,
     "{{verificado}}" => $verificado,
     "{{verificacion_fecha}}" => $verificacionFecha,
     "{{verificacion_persona}}" => $verificacionPersona,
-    "{{tarifa_noche}}" => number_format($tarifa, 2),
-    "{{subtotal}}" => number_format($subtotal, 2),
+    "{{tarifa_noche}}" => is_numeric($tarifa) ? number_format($tarifa, 2) : '—',
+    "{{subtotal}}" => is_numeric($subtotal) ? number_format($subtotal, 2) : '—',
     "{{iva}}" => $iva,
-    "{{iva_monto}}" => number_format($ivaMonto, 2),
+    "{{iva_monto}}" => is_numeric($ivaMonto) ? number_format($ivaMonto, 2) : '—',
     "{{ish}}" => $ish,
-    "{{ish_monto}}" => number_format($ishMonto, 2),
-    "{{inapam}}" => number_format($inapam, 2),
-    "{{total}}" => number_format($total, 2),
-    "{{pagado}}" => number_format($pagado, 2),
-    "{{saldo}}" => number_format($total - $pagado, 2),
-    "{{fecha_actual}}" => date("d/m/Y")  
+    "{{ish_monto}}" => is_numeric($ishMonto) ? number_format($ishMonto, 2) : '—',
+    "{{inapam}}" => is_numeric($inapam) ? number_format($inapam, 2) : '—',
+    "{{total}}" => is_numeric($total) ? number_format($total, 2) : '—',
+    "{{pagado}}" => is_numeric($pagado) ? number_format($pagado, 2) : '—',
+    "{{saldo}}" => is_numeric($total - $pagado) ? number_format($total - $pagado, 2) : '—',
+    "{{fecha_actual}}" => date("d/m/Y")
 ];
 
 foreach ($reemplazos as $clave => $valor) {
@@ -111,11 +134,7 @@ foreach ($reemplazos as $clave => $valor) {
 $dompdf = new Dompdf();
 $dompdf->set_option('isRemoteEnabled', true); // si usas imágenes externas
 $dompdf->loadHtml($html);
-$dompdf->setPaper('letter', 'portrait'); // <-- aquí se define carta vertical
+$dompdf->setPaper('letter', 'portrait');
 $dompdf->render();
 $dompdf->stream("Huesped_" . $nombreCliente . "_Administracion.pdf");
-
-
-
-
 ?>

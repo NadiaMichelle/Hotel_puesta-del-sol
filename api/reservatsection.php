@@ -15,11 +15,12 @@ if ($action === 'get_all') {
             // Decodificar campos JSON complejos correctamente
             $row['anticipo'] = json_decode($row['anticipo'] ?? '{}', true);
             $row['verification'] = json_decode($row['verification'] ?? '{}', true);
+            $row['pagosHotel'] = json_decode($row['pagosHotel'] ?? '[]', true);
             $row['pagosExtra'] = json_decode($row['pagosExtra'] ?? '[]', true);
             $row['checkinGuests'] = json_decode($row['checkinGuests'] ?? '[]', true);
             $row['checkinItems'] = json_decode($row['checkinItems'] ?? '{}', true);
 
-            // Otros campos siguen igual
+            // 🔥 Incluye totalReserva correctamente
             $data[] = [
                 'id' => $row['id'],
                 'resourceId' => $row['resourceId'],
@@ -39,10 +40,12 @@ if ($action === 'get_all') {
                 'notes' => $row['notes'],
                 'anticipo' => $row['anticipo'],
                 'verification' => $row['verification'],
+                'pagosHotel' => $row['pagosHotel'],
                 'pagosExtra' => $row['pagosExtra'],
                 'checkinGuests' => $row['checkinGuests'],
                 'checkinItems' => $row['checkinItems'],
-                'receptionistName' => $row['receptionistName']
+                'receptionistName' => $row['receptionistName'],
+                'totalReserva' => $row['totalReserva'] // 👈 ¡Aquí el totalReserva!
             ];
         }
 

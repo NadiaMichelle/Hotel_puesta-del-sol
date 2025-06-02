@@ -13,10 +13,17 @@ if ($action === 'add' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    // 🎯 Validar y limpiar la moneda
+    $moneda = strtoupper(trim($input['selectMoneda'] ?? 'MXN'));
+    $monedas_permitidas = ['MXN', 'USD', 'EUR', 'GBP', 'CAD', 'JPY', 'BRL', 'ARS', 'COP', 'CLP'];
+    if (!in_array($moneda, $monedas_permitidas)) {
+        $moneda = 'MXN';
+    }
+
     // Inserta anticipo sin ticket (se genera después)
     $stmt = $pdo->prepare("INSERT INTO anticipos 
-        (guest, reserva_id, entrada, salida, tipoHabitacion, personas, tarifa, total, anticipo, saldo, metodo_pago, tasa_cambio, observaciones, fecha) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        (guest, reserva_id, entrada, salida, tipoHabitacion, personas, tarifa, total, anticipo, saldo, metodo_pago, tasa_cambio, selectMoneda, observaciones, fecha) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
     $success = $stmt->execute([
         $input['guest'],
@@ -31,6 +38,7 @@ if ($action === 'add' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $input['saldo'],
         $input['metodo_pago'],
         $input['tasaCambio'],
+        $moneda, // ✅ Moneda validada correctamente
         $input['observaciones'],
         $input['fecha']
     ]);
@@ -54,8 +62,13 @@ if ($action === 'add' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 // ========================= LISTAR ANTICIPOS =========================
 if ($action === 'list') {
     try {
+        // 🚀 Elimina anticipos cuya reserva ya no existe
+        $pdo->query("DELETE FROM anticipos WHERE reserva_id IS NOT NULL AND reserva_id NOT IN (SELECT id FROM reservations)");
+
+        // Carga anticipos actualizados
         $stmt = $pdo->query("SELECT * FROM anticipos ORDER BY id DESC");
         $anticipos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
         echo json_encode(["success" => true, "data" => $anticipos]);
     } catch (Exception $e) {
         echo json_encode([
@@ -67,12 +80,13 @@ if ($action === 'list') {
     exit;
 }
 
+// ========================= BUSCAR ANTICIPO =========================
 if ($action === 'search') {
-  $query = $_GET['query'] ?? '';
-  $stmt = $pdo->prepare("SELECT * FROM anticipos WHERE ticket LIKE ? OR guest LIKE ? OR fecha LIKE ?");
-  $stmt->execute(["%$query%", "%$query%", "%$query%"]);
-  $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $query = $_GET['query'] ?? '';
+    $stmt = $pdo->prepare("SELECT * FROM anticipos WHERE ticket LIKE ? OR guest LIKE ? OR fecha LIKE ?");
+    $stmt->execute(["%$query%", "%$query%", "%$query%"]);
+    $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-  echo json_encode(['success' => true, 'data' => $data]);
-  exit;
+    echo json_encode(['success' => true, 'data' => $data]);
+    exit;
 }

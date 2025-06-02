@@ -220,6 +220,18 @@ fc-direction-ltr .fc-timeline-event.fc-event-end, .fc-direction-ltr .fc-timeline
     margin-top: 2px!important;; /* Small space between abbreviation and number */
 }
 
+.fc-event.custom-event {
+  transform: skew(-20deg);
+  width: 86% !important; /* Abarca todo el día (hasta 15:00 en el script) */
+  max-width: 100%;
+  margin-left: 0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  border-radius: 4px;
+  padding: 2px 4px;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
 .fc .fc-resource-area {
     width: 180px; /* Adjust width as needed to fit indicators */
     background-color: #fbfcfd; /* Slightly different background for resource column */
@@ -4786,68 +4798,6 @@ body {
                         </div>
 
                     </div>   
-            </div>
-
-            <!-- TEMPLATE para Pagos en Hotel -->
-            <template id="pagoHotelTemplate">
-            <div class="additional-payment-row form-grid payment-grid">
-                <button type="button" class="remove-payment-btn" title="Eliminar Pago">&times;</button>
-                <div class="form-group">
-                <label><i class="fas fa-dollar-sign"></i> Monto:</label>
-                <input type="number" name="pagosHotel[{{index}}][monto]" step="0.01" min="0" required class="payment-amount-input">
-                </div>
-                <div class="form-group">
-                <label><i class="fas fa-credit-card"></i> Método:</label>
-                <select name="pagosHotel[{{index}}][metodo]" required>
-                    <option value="">Seleccionar</option>
-                    <option value="Efectivo">Efectivo</option>
-                    <option value="debito">Tarjeta debito</option>
-                     <option value="Credito">Tarjeta Credito</option>
-                    <option value="Transferencia">Transferencia</option>
-                    <option value="Otro">Otro</option>
-                </select>
-                </div>
-                <div class="form-group">
-                <label><i class="fas fa-calendar-alt"></i> Fecha:</label>
-                <input type="date" name="pagosHotel[{{index}}][fecha]">
-                </div>
-            </div>
-            </template>
-
-            <!-- TEMPLATE para Pagos Extra a Distancia -->
-            <template id="pagoExtraTemplate">
-            <div class="additional-payment-row form-grid payment-grid">
-                <button type="button" class="remove-payment-btn" title="Eliminar Pago">&times;</button>
-                <div class="form-group">
-                <label><i class="fas fa-dollar-sign"></i> Monto:</label>
-                <input type="number" name="pagosExtra[{{index}}][monto]" step="0.01" min="0" required class="payment-amount-input">
-                </div>
-                <div class="form-group">
-                <label><i class="fas fa-credit-card"></i> Método:</label>
-                <select name="pagosExtra[{{index}}][metodo]" required>
-                    <option value="">Seleccionar</option>
-                    <option value="Transferencia">Transferencia</option>
-                    <option value="Deposito">Depósito</option>
-                    <option value="Cheque">Cheque</option>
-                    <option value="Otro">Otro</option>
-                </select>
-                </div>
-                <div class="form-group">
-                <label><i class="fas fa-key"></i> Clave:</label>
-                <input type="text" name="pagosExtra[{{index}}][clave]">
-                </div>
-                <div class="form-group">
-                <label><i class="fas fa-check-circle"></i> Autorización:</label>
-                <input type="text" name="pagosExtra[{{index}}][autorizacion]">
-                </div>
-                <div class="form-group">
-                <label><i class="fas fa-calendar-alt"></i> Fecha:</label>
-                <input type="date" name="pagosExtra[{{index}}][fecha]">
-                </div>
-            </div>
-            </template>
-
-
                     <!-- Tab 5: Check-in -->
                     <div id="tab-checkin" class="tab-content">
                         <h4><i class="fas fa-clipboard-check"></i> Check-in</h4>
@@ -5026,6 +4976,14 @@ body {
             <input type="text" id="guestState" name="guestState">
           </div>
           <div class="form-group">
+            <label for="guestCar"><i class="fas fa-car"></i> Automóvil:</label>
+            <input type="text" id="guestCar" name="guestCar">
+          </div>
+          <div class="form-group">
+            <label for="guestPostalCode"><i class="fas fa-mail-bulk"></i> Código Postal:</label>
+            <input type="text" id="guestPostalCode" name="guestPostalCode">
+          </div>
+          <div class="form-group">
             <label for="guestRFC"><i class="fas fa-id-card"></i> RFC:</label>
             <input type="text" id="guestRFC" name="guestRFC">
           </div>
@@ -5035,8 +4993,12 @@ body {
           </div>
         </div>
         <div class="modal-footer" style="text-align: right; margin-top: 20px;">
-          <button type="button" class="btn btn-secondary" onclick="closeGuestModal()">Cancelar</button>
-          <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar Cliente</button>
+          <button type="button" class="btn btn-secondary" onclick="closeGuestModal()">
+            <i class="fas fa-times"></i> Cancelar
+          </button>
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save"></i> Guardar Cliente
+          </button>
         </div>
       </form>
     </div>
@@ -5058,7 +5020,77 @@ body {
   </div>
 </div>
 
+            <!-- TEMPLATE para Pagos en Hotel -->
+            <template id="pagoHotelTemplate">
+            <div class="additional-payment-row form-grid payment-grid">
+                <button type="button" class="remove-payment-btn" title="Eliminar Pago">&times;</button>
+                <div class="form-group">
+                <label><i class="fas fa-dollar-sign"></i> Monto:</label>
+                <input type="number" name="pagosHotel[{{index}}][monto]" step="0.01" min="0" required class="payment-amount-input">
+                </div>
+                <div class="form-group">
+                <label><i class="fas fa-credit-card"></i> Método:</label>
+                <select name="pagosHotel[{{index}}][metodo]" required>
+                    <option value="">Seleccionar</option>
+                    <option value="Efectivo">Efectivo</option>
+                    <option value="debito">Tarjeta debito</option>
+                     <option value="Credito">Tarjeta Credito</option>
+                    <option value="Transferencia">Transferencia</option>
+                    <option value="Otro">Otro</option>
+                </select>
+                </div>
+                <div class="form-group">
+                <label><i class="fas fa-calendar-alt"></i> Fecha:</label>
+                <input type="date" name="pagosHotel[{{index}}][fecha]">
+                </div>
+            </div>
+            </template>
+
+            <!-- TEMPLATE para Pagos Extra a Distancia -->
+            <template id="pagoExtraTemplate">
+            <div class="additional-payment-row form-grid payment-grid">
+                <button type="button" class="remove-payment-btn" title="Eliminar Pago">&times;</button>
+                <div class="form-group">
+                <label><i class="fas fa-dollar-sign"></i> Monto:</label>
+                <input type="number" name="pagosExtra[{{index}}][monto]" step="0.01" min="0" required class="payment-amount-input">
+                </div>
+                <div class="form-group">
+                <label><i class="fas fa-credit-card"></i> Método:</label>
+                <select name="pagosExtra[{{index}}][metodo]" required>
+                    <option value="">Seleccionar</option>
+                    <option value="Transferencia">Transferencia</option>
+                    <option value="Deposito">Depósito</option>
+                    <option value="Cheque">Cheque</option>
+                    <option value="Otro">Otro</option>
+                </select>
+                </div>
+                <div class="form-group">
+                <label><i class="fas fa-key"></i> Clave:</label>
+                <input type="text" name="pagosExtra[{{index}}][clave]">
+                </div>
+                <div class="form-group">
+                <label><i class="fas fa-check-circle"></i> Autorización:</label>
+                <input type="text" name="pagosExtra[{{index}}][autorizacion]">
+                </div>
+                <div class="form-group">
+                <label><i class="fas fa-calendar-alt"></i> Fecha:</label>
+                <input type="date" name="pagosExtra[{{index}}][fecha]">
+                </div>
+            </div>
+            </template>
   <script type="module" src="assets/js/script.js"></script>   <!-- Reservation Modal (Structure remains the same, JS handles population/submission) -->
-   
+   <script>
+  function closeGuestModal() {
+    const modal = document.getElementById('guestModal');
+    if (modal) {
+      modal.style.display = 'none';
+      modal.classList.remove('show');
+      document.body.classList.remove('modal-open');
+      const backdrop = document.querySelector('.modal-backdrop');
+      if (backdrop) backdrop.remove();
+    }
+  }
+</script>
+
 </body>
 </html>
