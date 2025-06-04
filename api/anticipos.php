@@ -20,6 +20,9 @@ if ($action === 'add' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $moneda = 'MXN';
     }
 
+    // ✅ Tomamos el monto convertido a MXN desde totalPesos
+    $anticipoConvertido = $input['totalPesos'] ?? $input['anticipo'] ?? 0;
+
     // Inserta anticipo sin ticket (se genera después)
     $stmt = $pdo->prepare("INSERT INTO anticipos 
         (guest, reserva_id, entrada, salida, tipoHabitacion, personas, tarifa, total, anticipo, saldo, metodo_pago, tasa_cambio, selectMoneda, observaciones, fecha) 
@@ -34,11 +37,11 @@ if ($action === 'add' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $input['personas'],
         $input['tarifa'],
         $input['total'],
-        $input['anticipo'],
+        $anticipoConvertido, // ← ya en pesos MXN
         $input['saldo'],
         $input['metodo_pago'],
         $input['tasaCambio'],
-        $moneda, // ✅ Moneda validada correctamente
+        $moneda,
         $input['observaciones'],
         $input['fecha']
     ]);

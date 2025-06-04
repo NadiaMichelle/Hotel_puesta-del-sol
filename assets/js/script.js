@@ -1739,45 +1739,44 @@ document.addEventListener('DOMContentLoaded', function () {
   
 
     // Configurar navegación del menú lateral
-    const navLinks = document.querySelectorAll('.sidebar ul li a');
-    navLinks.forEach(link => {
-        link.addEventListener('click', (event) => {
-            event.preventDefault();
+   const navLinks = document.querySelectorAll('.sidebar ul li a');
+navLinks.forEach(link => {
+    link.addEventListener('click', (event) => {
+        event.preventDefault();
 
-            navLinks.forEach(l => l.classList.remove('active'));
-            link.classList.add('active');
+        navLinks.forEach(l => l.classList.remove('active'));
+        link.classList.add('active');
 
-            const section = link.textContent.trim();
+        const section = link.textContent.trim();
 
-            if (section === 'Cerrar sesión') {
-                window.location.href = 'logout.php';
-                return;
-            }
+        if (section === 'Cerrar sesión') {
+            window.location.href = 'logout.php';
+            return;
+        }
 
-            dynamicContentEl.innerHTML = '';
-            dynamicContentEl.style.display = 'none';
-            calendarEl.style.display = 'none';
+        dynamicContentEl.innerHTML = '';
+        dynamicContentEl.style.display = 'none';
+        calendarEl.style.display = 'none';
 
-            if (section === 'Calendario') {
-                calendarEl.style.display = 'block';
-                renderCalendar();
-            } else if (section === 'Habitaciones') {
-                renderRoomsSection();
-            } else if (section === 'Huéspedes') {
-                renderGuestsSection();
-            } else if (section === 'Anticipos') {
-                renderAnticiposSection();
-            } else if (section === 'Reservas') {
-                renderReservationsSection();
-            } else if (section === 'Añadir usuario') {
-                renderAddUserSection(); // ✅ aquí ya se puede llamar sin problema
-            } else if (link.id === 'exportSqlBtn') {
-                handleExportSQL();
-                link.classList.remove('active');
-                document.querySelector('.sidebar ul li a.active').classList.add('active');
-            }
-        });
+        if (section === 'Calendario') {
+            calendarEl.style.display = 'block';
+            renderCalendar();
+        } else if (section === 'Habitaciones') {
+            renderRoomsSection();
+        } else if (section === 'Huéspedes') {
+            renderGuestsSection();
+        } else if (section === 'Anticipos') {
+            renderAnticiposSection();
+        } else if (section === 'Reservas') {
+            renderReservationsSection();
+        } else if (section === 'Configuración') {
+           renderConfiguracionSection();
+        } else if (section === 'Añadir usuario') {
+            renderAddUserSection();
+        }
     });
+});
+
 
      
     // Mostrar calendario por defecto al cargar
@@ -2756,13 +2755,14 @@ function renderAnticiposSection() {
       personas: document.getElementById('personas').value,
       tarifa: document.getElementById('tarifa').value,
       total: document.getElementById('total').value,
-      anticipo: document.getElementById('anticipo').value,
+      anticipo: document.getElementById('totalPesos').value,
       saldo: document.getElementById('saldo').value,
       observaciones: document.getElementById('observaciones').value,
       fecha: new Date().toISOString().slice(0, 10),
       metodo_pago: document.getElementById('metodo_pago').value,
       selectMoneda: document.getElementById("selectMoneda").value,
       tasaCambio: document.getElementById('tasaCambio').value,
+      anticipoOriginal: document.getElementById('anticipo').value,
     };
 
     if (!data.guest || !data.reserva || !data.anticipo || !data.metodo_pago) {
@@ -2851,9 +2851,6 @@ window.llenarFormularioReserva = function (reserva) {
  document.getElementById('tarifa').value = reserva.rate || '';
  
 
-
-
-
   const totalReserva = parseFloat(reserva.totalReserva || 0);
   document.getElementById('total').value = totalReserva.toFixed(2);
 
@@ -2931,9 +2928,7 @@ function mostrarAnticipos(lista) {
   lista.forEach(item => {
     const anticipo = parseFloat(item.anticipo || 0);
     const tasa = parseFloat(item.tasa_cambio || 0);
-    const totalMXN = (item.metodo_pago === 'Efectivo' && tasa > 0)
-      ? (anticipo * tasa)
-      : anticipo;
+    const totalMXN = anticipo; // Ya viene en pesos, no volver a convertir
 
 body.innerHTML += `
   <tr style="cursor:pointer" onclick='verDetalleAnticipo(${JSON.stringify(item)})'>
@@ -3028,17 +3023,26 @@ window.mostrarMonedaSiEsEfectivo = mostrarMonedaSiEsEfectivo;
 // Hacer accesibles globalmente
 window.actualizarTasaCambio = actualizarTasaCambio;
 window.verDetalleAnticipo = function (item) {
+  const anticipo = parseFloat(item.anticipo || 0);
+  const tasa = parseFloat(item.tasa_cambio || 0);
+  const moneda = item.selectMoneda || 'MXN';
+
+  let textoAnticipo = '';
+
+  if (moneda !== 'MXN' && tasa > 0) {
+    const original = (anticipo / tasa).toFixed(2);
+    textoAnticipo = `${original} ${moneda} → $${anticipo.toFixed(2)} MXN`;
+  } else {
+    textoAnticipo = `$${anticipo.toFixed(2)} MXN`;
+  }
+
+  // Llenar campos del modal
   document.getElementById('modalGuest').textContent = item.guest;
   document.getElementById('modalReserva').textContent = item.reserva_id || '-';
   document.getElementById('modalMetodo').textContent = item.metodo_pago;
-  document.getElementById('modalTasa').textContent = item.tasa_cambio || '-';
-  document.getElementById('modalAnticipo').textContent = parseFloat(item.anticipo).toFixed(2);
-
-  const totalMXN = (item.metodo_pago === 'Efectivo' && item.tasa_cambio)
-    ? parseFloat(item.anticipo) * parseFloat(item.tasa_cambio)
-    : parseFloat(item.anticipo);
-
-  document.getElementById('modalTotal').textContent = totalMXN.toFixed(2);
+  document.getElementById('modalTasa').textContent = tasa > 0 ? tasa : '-';
+  document.getElementById('modalAnticipo').textContent = textoAnticipo;
+  document.getElementById('modalTotal').textContent = `$${anticipo.toFixed(2)}`;
   document.getElementById('modalFecha').textContent = item.fecha;
   document.getElementById('modalObs').textContent = item.observaciones || '—';
 
@@ -3050,3 +3054,304 @@ window.verDetalleAnticipo = function (item) {
   modal.show();
 };
 
+
+function renderConfiguracionSection() {
+  window.renderConfiguracionSection = renderConfiguracionSection;
+
+  dynamicContentEl.innerHTML = `
+    <div class="config-header mb-4">
+      <h3 class="fw-bold text-uppercase" style="color: #E67E22;">
+        <i class="fas fa-cogs me-2"></i> Configuración General
+      </h3>
+
+      <form id="configForm" class="card p-4 shadow-sm border-0 mb-4">
+        <h5><i class="fas fa-percent me-1"></i> Impuestos</h5>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label for="iva" class="form-label">IVA (%)</label>
+            <input type="number" step="0.01" id="iva" name="iva" class="form-control" required>
+          </div>
+          <div class="col-md-6">
+            <label for="ish" class="form-label">ISH (%)</label>
+            <input type="number" step="0.01" id="ish" name="ish" class="form-control" required>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-outline-orange mt-3">
+          <i class="fas fa-save me-1"></i> Guardar Configuración
+        </button>
+      </form>
+
+      <div class="card p-4 shadow-sm border-0 mb-4">
+        <h5><i class="fas fa-calendar-plus me-1"></i> Crear Nueva Temporada</h5>
+        <form id="formNuevaTemporada" class="row g-3">
+          <div class="col-md-4">
+            <label for="nombreTemporada" class="form-label">Nombre</label>
+            <input type="text" id="nombreTemporada" class="form-control" placeholder="Ej. Temporada Alta" required>
+          </div>
+          <div class="col-md-4">
+            <label for="inicioTemporada" class="form-label">Inicio</label>
+            <input type="date" id="inicioTemporada" class="form-control" required>
+          </div>
+          <div class="col-md-4">
+            <label for="finTemporada" class="form-label">Fin</label>
+            <input type="date" id="finTemporada" class="form-control" required>
+          </div>
+          <div class="col-12">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-plus"></i> Crear Temporada
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card p-4 shadow-sm border-0 mb-4">
+        <h5><i class="fas fa-calendar me-1"></i> Temporadas Registradas</h5>
+        <div class="table-responsive">
+          <table class="table table-striped table-bordered" id="tablaTemporadas">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Fecha Inicio</th>
+                <th>Fecha Fin</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card p-4 shadow-sm border-0 mb-4">
+        <h5><i class="fas fa-tag me-1"></i> Asignar Tarifas por Habitaciones</h5>
+        <form id="formTarifaHabitacion" class="row g-3">
+          <div class="col-md-4">
+            <label for="habitacionSelect" class="form-label">Habitaciones</label>
+            <select id="habitacionSelect" class="form-select" multiple required></select>
+            <small class="text-muted">Selecciona varias con Ctrl o Shift</small>
+          </div>
+          <div class="col-md-4">
+            <label for="temporadaSelect" class="form-label">Temporada</label>
+            <select id="temporadaSelect" class="form-select" required>
+              <option value="">Selecciona una temporada</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label for="precioTarifa" class="form-label">Precio ($)</label>
+            <input type="number" step="0.01" id="precioTarifa" class="form-control" placeholder="Ej. 2500" required>
+          </div>
+          <div class="col-12">
+            <button type="submit" class="btn btn-success">
+              <i class="fas fa-plus me-1"></i> Asignar Tarifas
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card p-4 shadow-sm border-0">
+        <h5><i class="fas fa-table me-1"></i> Lista de Tarifas</h5>
+        <table class="table table-sm table-bordered" id="tablaTarifas">
+          <thead>
+            <tr>
+              <th>Habitación</th>
+              <th>Temporada</th>
+              <th>Precio ($)</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+  `;
+
+cargarTemporadasTabla();
+  dynamicContentEl.style.display = 'block';
+  calendarEl.style.display = 'none';
+
+  // Cargar configuración inicial
+  fetch('api/config.php?action=get')
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        document.getElementById('iva').value = data.iva || '';
+        document.getElementById('ish').value = data.ish || '';
+      }
+    });
+
+  // Guardar Configuración
+  document.getElementById('configForm').onsubmit = async (e) => {
+    e.preventDefault();
+    const iva = parseFloat(document.getElementById('iva').value) || 0;
+    const ish = parseFloat(document.getElementById('ish').value) || 0;
+
+    const res = await fetch('api/config.php?action=update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ iva, ish })
+    });
+    const json = await res.json();
+    showAlert(json.success ? 'Configuración guardada' : 'Error', json.success ? 'success' : 'error');
+  };
+
+  // Crear temporada
+  document.getElementById('formNuevaTemporada').onsubmit = async (e) => {
+    e.preventDefault();
+    const nombre = document.getElementById('nombreTemporada').value;
+    const fecha_inicio = document.getElementById('inicioTemporada').value;
+    const fecha_fin = document.getElementById('finTemporada').value;
+
+    const res = await fetch('api/temporadas.php?action=add', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre, fecha_inicio, fecha_fin })
+    });
+    const json = await res.json();
+    showAlert(json.success ? 'Temporada creada' : 'Error al crear', json.success ? 'success' : 'error');
+    if (json.success) renderConfiguracionSection();
+  };
+
+  cargarTemporadasTabla();
+  cargarTarifasTabla();
+  cargarHabitacionesYTemporadas();
+}
+
+function cargarTemporadasTabla() {
+  fetch('api/temporadas.php?action=get_all')
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        const tbody = document.querySelector("#tablaTemporadas tbody");
+        tbody.innerHTML = '';
+        data.temporadas.forEach(t => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td><input value="${t.nombre}" data-id="${t.id}" class="form-control form-control-sm nombre-temporada"></td>
+            <td><input type="date" value="${t.fecha_inicio}" class="form-control form-control-sm fecha-inicio"></td>
+            <td><input type="date" value="${t.fecha_fin}" class="form-control form-control-sm fecha-fin"></td>
+            <td class="d-flex gap-1">
+              <button class="btn btn-sm btn-primary btn-guardar" data-id="${t.id}">
+                <i class="fas fa-save"></i>
+              </button>
+              <button class="btn btn-sm btn-danger btn-eliminar" data-id="${t.id}">
+                <i class="fas fa-trash-alt"></i>
+              </button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        // Guardar cambios
+        document.querySelectorAll(".btn-guardar").forEach(btn => {
+          btn.onclick = async () => {
+            const row = btn.closest("tr");
+            const id = btn.dataset.id;
+            const nombre = row.querySelector(".nombre-temporada").value;
+            const fecha_inicio = row.querySelector(".fecha-inicio").value;
+            const fecha_fin = row.querySelector(".fecha-fin").value;
+
+            const res = await fetch('api/temporadas.php?action=update', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id, nombre, fecha_inicio, fecha_fin })
+            });
+            const json = await res.json();
+            showAlert(json.success ? 'Temporada actualizada' : 'Error', json.success ? 'success' : 'error');
+          };
+        });
+
+        // Eliminar temporada
+        document.querySelectorAll(".btn-eliminar").forEach(btn => {
+          btn.onclick = async () => {
+            const id = btn.dataset.id;
+            if (!confirm("¿Eliminar esta temporada?")) return;
+
+            const res = await fetch(`api/temporadas.php?action=delete&id=${id}`);
+            const json = await res.json();
+            showAlert(json.success ? 'Temporada eliminada' : 'Error al eliminar', json.success ? 'success' : 'error');
+            if (json.success) cargarTemporadasTabla();
+          };
+        });
+      }
+    });
+}
+
+function cargarHabitacionesYTemporadas() {
+  // Habitaciones
+  fetch('api/habitaciones.php?action=get_all')
+    .then(res => res.json())
+    .then(data => {
+      const select = document.getElementById('habitacionSelect');
+      data.habitaciones.forEach(h => {
+        const opt = document.createElement('option');
+        opt.value = h.id;
+        opt.textContent = `${h.type} - ${h.number}`;
+        select.appendChild(opt);
+      });
+    });
+
+  // Temporadas
+  fetch('api/temporadas.php?action=get_all')
+    .then(res => res.json())
+    .then(data => {
+      const select = document.getElementById('temporadaSelect');
+      data.temporadas.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t.id;
+        opt.textContent = `${t.nombre} (${t.fecha_inicio} al ${t.fecha_fin})`;
+        select.appendChild(opt);
+      });
+    });
+}
+
+function cargarTarifasTabla() {
+  fetch('api/tarifas_habitacion.php?action=get_all')
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        const tbody = document.querySelector("#tablaTarifas tbody");
+        tbody.innerHTML = '';
+        data.tarifas.forEach(t => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${t.habitacion}</td>
+            <td>${t.temporada} (${t.fecha_inicio} al ${t.fecha_fin})</td>
+            <td>$${parseFloat(t.tarifa).toFixed(2)}</td>
+            <td>
+              <button class="btn btn-sm btn-danger btn-eliminar-tarifa" data-id="${t.id}">
+                <i class="fas fa-trash-alt"></i>
+              </button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        document.querySelectorAll(".btn-eliminar-tarifa").forEach(btn => {
+          btn.onclick = async () => {
+            const id = btn.dataset.id;
+            if (!confirm("¿Eliminar esta tarifa?")) return;
+
+            const res = await fetch(`api/tarifas_habitacion.php?action=delete&id=${id}`);
+            const json = await res.json();
+            showAlert(json.success ? 'Tarifa eliminada' : 'Error al eliminar', json.success ? 'success' : 'error');
+            if (json.success) cargarTarifasTabla();
+          };
+        });
+      }
+    });
+
+  // Evento guardar tarifas
+  document.getElementById('formTarifaHabitacion').onsubmit = async (e) => {
+    e.preventDefault();
+    const habitaciones = Array.from(document.getElementById('habitacionSelect').selectedOptions).map(opt => opt.value);
+    const temporada = document.getElementById('temporadaSelect').value;
+    const precio = parseFloat(document.getElementById('precioTarifa').value) || 0;
+
+    const res = await fetch('api/tarifas_habitacion.php?action=add', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ habitaciones, temporada, precio })
+    });
+    const json = await res.json();
+    showAlert(json.success ? 'Tarifas asignadas' : 'Error', json.success ? 'success' : 'error');
+    if (json.success) cargarTarifasTabla();
+  };
+}

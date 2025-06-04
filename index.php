@@ -4529,6 +4529,7 @@ body {
   margin-bottom: 25px;
   line-height: 1.4;
   padding: 0 15px;
+  
 }
 </style>
  <script type="module" src="assets/js/script.js"></script>
@@ -4549,6 +4550,8 @@ body {
                 <li><a href="#"><i class="fas fa-building"></i> Habitaciones</a></li>
                 <li><a href="#"><i class="fas fa-list-alt"></i> Reservas</a></li>
                 <li><a href="#"><i class="fas fa-dollar-sign"></i> Anticipos</a></li>
+                <li><a href="#"><i class="fas fa-cogs"></i> Configuración</a></li>
+
                 <li><a href="logout.php"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</a></li> <!-- Points to logout.php -->
             </ul>
         </nav>
@@ -4797,7 +4800,7 @@ body {
                             </div>
                         </div>
 
-                    </div>   
+                    </div>       
                     <!-- Tab 5: Check-in -->
                     <div id="tab-checkin" class="tab-content">
                         <h4><i class="fas fa-clipboard-check"></i> Check-in</h4>
@@ -5078,6 +5081,49 @@ body {
                 </div>
             </div>
             </template>
+            <!-- Modal Editar Tarifa -->
+<div class="modal fade" id="modalEditarTarifa" tabindex="-1" aria-hidden="true">
+    <style>
+        .modal {
+  z-index: 1060 !important;
+}
+
+.modal-backdrop {
+  z-index: 1050 !important;
+}
+
+.fc {
+  z-index: 1 !important;
+}
+
+        </style>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="formEditarTarifa">
+        <div class="modal-header bg-orange text-white">
+          <h5 class="modal-title"><i class="fas fa-edit"></i> Editar Tarifa</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="tarifaId">
+          <div class="mb-3">
+            <label for="tarifaTipo" class="form-label">Tipo de Tarifa</label>
+            <input type="text" id="tarifaTipo" class="form-control" readonly>
+          </div>
+          <div class="mb-3">
+            <label for="tarifaPrecio" class="form-label">Precio ($)</label>
+            <input type="number" step="0.01" id="tarifaPrecio" class="form-control" placeholder="Ingrese precio">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Guardar Cambios</button>
+          <button type="button" class="btn btn-danger" id="eliminarTarifaBtn"><i class="fas fa-trash"></i> Eliminar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
   <script type="module" src="assets/js/script.js"></script>   <!-- Reservation Modal (Structure remains the same, JS handles population/submission) -->
    <script>
   function closeGuestModal() {
