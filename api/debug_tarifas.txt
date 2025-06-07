@@ -1,0 +1,10 @@
+Array
+(
+    [habitaciones] => Array
+        (
+            [0] => 3
+        )
+
+    [temporada] => 14
+    [precio] => 100
+)

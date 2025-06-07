@@ -209,7 +209,7 @@ async function saveGuest(guestData) {
         });
         
         if (!response.ok) throw new Error('Error en la respuesta del servidor');
-        return await response.json();
+          return await response.json();
     } catch (error) {
         console.error('Error saving guest:', error);
         return { success: false, error: error.message };
@@ -223,10 +223,12 @@ async function saveGuest(guestData) {
  */
 async function renderCalendar() {
     try {
-        const [rooms, reservations] = await Promise.all([
-            fetchRooms(),
-            fetchReservations()
-        ]);
+      const [rooms, reservations] = await Promise.all([
+  fetchRooms(),
+  fetchReservations()
+]);
+window.TODAS_LAS_HABITACIONES = rooms;
+
         
         if (calendarInstance) {
             calendarInstance.destroy();
@@ -277,8 +279,27 @@ slotLabelDidMount: function(info) {
                 initialView: 'resourceTimelineWeek',
                 
 
-            }))
-            ,
+            })),
+            validRange: function(nowDate) {
+  if (ROL_USUARIO !== 'admin') {
+    const start = new Date();
+    start.setDate(1); // Primer día del mes actual
+
+    const end = new Date();
+    end.setMonth(end.getMonth() + 3); // 2 meses adelante (actual + 2)
+    end.setDate(0); // Último día del segundo mes
+
+    return {
+      start: start.toISOString().split('T')[0],
+      end: end.toISOString().split('T')[0]
+    };
+  }
+
+  // Si es admin, sin restricciones
+  return null;
+},
+
+
             selectable: true,
             dateClick: handleDateClick,
             eventClick: handleEventClick,
@@ -306,9 +327,26 @@ slotLabelDidMount: function(info) {
         console.error('Error rendering calendar:', error);
         showAlert('Error al cargar el calendario', 'error');
     }
-}
 
-  
+    
+  }
+
+  document.getElementById('roomSearchInput').addEventListener('input', function () {
+  const query = this.value.trim().toLowerCase();
+
+  calendarInstance.getResources().forEach(resource => {
+    const title = resource.title.toLowerCase();
+    const number = (resource.extendedProps?.number || '').toString();
+
+    const match = title.includes(query) || number.includes(query);
+
+    const row = document.querySelector(`.fc-datagrid-cell.fc-resource-${resource.id}`);
+    if (row) {
+      row.closest('tr').style.display = match || !query ? '' : 'none';
+    }
+  });
+});
+
 /**
  * Personaliza la visualización de eventos en el calendario
  */
@@ -593,7 +631,7 @@ async function openReservationModal(info = {}) {
         // TAB 5 - Check-in
         populateCheckinGuests(props.checkinGuests || []);
         populateCheckinItems(props.checkinItems || {});
-        safeSetValue('receptionistName', props.receptionistName || 'Ignacio');
+       safeSetValue('receptionistName', typeof nombreUsuario !== 'undefined' ? nombreUsuario : '');
 
         // INAPAM
         const inapamCheck = document.getElementById('inapamDiscount');
@@ -628,7 +666,8 @@ async function openReservationModal(info = {}) {
 
         safeSetValue('reservationRoomSelect', info.resource?.id || '');
         safeSetValue('reservationStatus', 'RESERVACION_PREVIA');
-        safeSetValue('receptionistName', 'Ignacio');
+       safeSetValue('receptionistName', typeof nombreUsuario !== 'undefined' ? nombreUsuario : '');
+
 
         populateCheckinGuests([]);
         populateCheckinItems({});
@@ -648,6 +687,7 @@ async function openReservationModal(info = {}) {
         tab.style.display = 'block';
         tab.style.visibility = 'hidden';
     });
+await cargarConfiguracionEnModalReserva();
 
     const modal = document.getElementById('reservationModal');
     if (modal) modal.style.display = 'block';
@@ -660,6 +700,27 @@ async function openReservationModal(info = {}) {
     }, 100);
 }
 
+async function cargarConfiguracionEnModalReserva() {
+  try {
+    const res = await fetch('api/config.php?action=get');
+    const data = await res.json();
+
+    if (data.success) {
+      const ivaInput = document.getElementById('reservationIVA');
+      const ishInput = document.getElementById('reservationISH');
+
+      if (ivaInput) ivaInput.value = data.iva ?? 0;
+      if (ishInput) ishInput.value = data.ish ?? 0;
+
+      const isAdmin = (ROL_USUARIO === 'admin'); // Cambia esto si tienes una forma real de saberlo
+
+      ivaInput?.toggleAttribute('readonly', !isAdmin);
+      ishInput?.toggleAttribute('readonly', !isAdmin);
+    }
+  } catch (err) {
+    console.error("❌ Error al cargar configuración:", err);
+  }
+}
 
 
 /**
@@ -3339,19 +3400,19 @@ function cargarTarifasTabla() {
     });
 
   // Evento guardar tarifas
-  document.getElementById('formTarifaHabitacion').onsubmit = async (e) => {
-    e.preventDefault();
-    const habitaciones = Array.from(document.getElementById('habitacionSelect').selectedOptions).map(opt => opt.value);
-    const temporada = document.getElementById('temporadaSelect').value;
-    const precio = parseFloat(document.getElementById('precioTarifa').value) || 0;
+ document.getElementById('formTarifaHabitacion').onsubmit = async (e) => {
+  e.preventDefault();
+  const habitaciones = Array.from(document.getElementById('habitacionSelect').selectedOptions).map(opt => opt.value);
+  const temporada = document.getElementById('temporadaSelect').value;
+  const precio = parseFloat(document.getElementById('precioTarifa').value) || 0;
 
-    const res = await fetch('api/tarifas_habitacion.php?action=add', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ habitaciones, temporada, precio })
-    });
-    const json = await res.json();
-    showAlert(json.success ? 'Tarifas asignadas' : 'Error', json.success ? 'success' : 'error');
-    if (json.success) cargarTarifasTabla();
-  };
+  // 👇 Agrega esto
+  console.log({ habitaciones, temporada, precio });
+
+  const res = await fetch('api/tarifas_habitacion.php?action=add', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ habitaciones, temporada, precio })
+  });
+ }
 }

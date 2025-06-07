@@ -29,13 +29,18 @@ if (empty($data['hora_impresion'])) {
 }
 
 $tasa = floatval($data['tasa_cambio']);
-$anticipo = floatval($data['anticipo']);
+$anticipoMXN = floatval($data['anticipo']);
 $moneda = strtoupper($data['selectMoneda'] ?? 'MXN');
-$totalMXN = ($data['metodo_pago'] === 'Efectivo' && $tasa > 0) ? $anticipo * $tasa : $anticipo;
 
-$lineaTotal = ($data['metodo_pago'] === 'Efectivo' && $tasa > 0) 
-    ? "TOTAL:         $" . number_format($totalMXN, 2) . " MXN\n" 
-    : "TOTAL:         $" . number_format($totalMXN, 2) . " {$moneda}\n";
+// Mostrar anticipo original si fue en otra moneda
+if ($moneda !== 'MXN' && $tasa > 0) {
+    $original = number_format($anticipoMXN / $tasa, 2);
+    $textoAnticipo = "{$original} {$moneda} > $" . number_format($anticipoMXN, 2) . " MXN";
+} else {
+    $textoAnticipo = "$" . number_format($anticipoMXN, 2) . " MXN";
+}
+
+$lineaTotal = "TOTAL:         $" . number_format($anticipoMXN, 2) . " MXN\n";
 
 // ESC/POS Commands
 $init = "\x1B\x40"; // Reset
@@ -60,7 +65,7 @@ $contenido .= "ENTRADA:       {$data['entrada']}\n";
 $contenido .= "SALIDA:        {$data['salida']}\n";
 $contenido .= "METODO:        {$data['metodo_pago']}\n";
 $contenido .= "TASA:          " . ($tasa > 0 ? number_format($tasa, 2) : '-') . "\n";
-$contenido .= "ANTICIPO:      $" . number_format($anticipo, 2) . " {$moneda}\n";
+$contenido .= "ANTICIPO:      {$textoAnticipo}\n";
 $contenido .= $lineaTotal;
 $contenido .= "FECHA:         {$data['fecha']}\n";
 $contenido .= "HORA IMP.:     {$data['hora_impresion']}\n";

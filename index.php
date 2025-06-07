@@ -4546,22 +4546,24 @@ body {
                 <li><a href="#" class="active"><i class="fas fa-calendar-alt"></i> Calendario</a></li>
                 <?php if ($isAdmin): // Only show add user if admin ?>
                 <li><a href="#"><i class="fas fa-user-plus"></i> Añadir usuario</a></li>
+                <li><a href="#"><i class="fas fa-cogs"></i> Configuración</a></li>
                 <?php endif; ?>
                 <li><a href="#"><i class="fas fa-building"></i> Habitaciones</a></li>
                 <li><a href="#"><i class="fas fa-list-alt"></i> Reservas</a></li>
                 <li><a href="#"><i class="fas fa-dollar-sign"></i> Anticipos</a></li>
-                <li><a href="#"><i class="fas fa-cogs"></i> Configuración</a></li>
+              
 
                 <li><a href="logout.php"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</a></li> <!-- Points to logout.php -->
             </ul>
         </nav>
-        <main class="main-content">
-            <div id='calendar'></div>
-            <div id="dynamic-content" style="display: none;">
-                <!-- Content for other sections will be loaded here dynamically -->
-            </div>
-        </main>
-    </div>
+    <main class="main-content">
+  <div id="calendar"></div>
+
+  <div id="dynamic-content" style="display: none;">
+    <!-- Content for other sections will be loaded here dynamically -->
+  </div>
+</main>
+
 
     <!-- Reservation Modal (Structure remains the same, JS handles population/submission) -->
   <div id="reservationModal" class="modal">
@@ -4626,15 +4628,15 @@ body {
                             </div>
                         </div>
                         <div class="form-grid">
-                             <div class="form-group">
-                               <label for="reservationIVA"><i class="fas fa-percentage"></i> IVA (%):</label>
-                               <input type="number" id="reservationIVA" name="reservationIVA" value="16" step="0.1" min="0" data-admin-editable="true" class="admin-editable">
+                            <div class="form-group">
+                                <label for="reservationIVA"><i class="fas fa-percentage"></i> IVA (%):</label>
+                                <input type="number" id="reservationIVA" name="reservationIVA" value="16" step="0.1" min="0" data-admin-editable="true" class="admin-editable">
                             </div>
-                             <div class="form-group">
-                               <label for="reservationISH"><i class="fas fa-percentage"></i> ISH (%):</label>
-                               <input type="number" id="reservationISH" name="reservationISH" value="3" step="0.1" min="0" data-admin-editable="true" class="admin-editable">
+                            <div class="form-group">
+                                <label for="reservationISH"><i class="fas fa-percentage"></i> ISH (%):</label>
+                                <input type="number" id="reservationISH" name="reservationISH" value="3" step="0.1" min="0" data-admin-editable="true" class="admin-editable">
                             </div>
-                        </div>
+                            </div>
                          <div class="form-group total-section">
                                <label><i class="fas fa-calculator"></i> Total a Pagar:</label>
                                <span id="reservationTotal" class="calculated-total">$0.00</span>
@@ -4931,10 +4933,12 @@ body {
 
                         <!-- Recepcionista -->
                         <h5><i class="fas fa-user-tie"></i> Recepcionista que atiende</h5>
-                        <div class="form-group">
-                            <input type="text" id="receptionistName" name="receptionistName" value="Ignacio" readonly class="readonly-input">
-                            <!-- This value should ideally be set dynamically based on logged-in user -->
-                        </div>
+                    <div class="form-group">
+                        <input type="text" id="receptionistName" name="receptionistName"
+                        value="<?php echo htmlspecialchars($_SESSION['fullName'] ?? ''); ?>"
+                        readonly class="readonly-input">
+                    </div>
+
                     </div>
                 </form>
                  <div class="modal-footer">
@@ -5136,6 +5140,12 @@ body {
       if (backdrop) backdrop.remove();
     }
   }
+</script>
+<script>
+  const nombreUsuario = "<?php echo htmlspecialchars($_SESSION['fullName'] ?? ''); ?>";
+</script>
+<script>
+  const ROL_USUARIO = "<?php echo $_SESSION['role'] ?? 'user'; ?>";
 </script>
 
 </body>
