@@ -4548,7 +4548,8 @@ body {
                 <li><a href="#"><i class="fas fa-user-plus"></i> Añadir usuario</a></li>
                 <li><a href="#"><i class="fas fa-cogs"></i> Configuración</a></li>
                 <?php endif; ?>
-                <li><a href="#"><i class="fas fa-building"></i> Habitaciones</a></li>
+                 <a href="habitacion/habitaciones.php" data-link="normal"><i class="fas fa-building"></i> Habitaciones</a>
+
                 <li><a href="#"><i class="fas fa-list-alt"></i> Reservas</a></li>
                 <li><a href="#"><i class="fas fa-dollar-sign"></i> Anticipos</a></li>
               
@@ -4557,6 +4558,9 @@ body {
             </ul>
         </nav>
     <main class="main-content">
+  <div class="mb-3">
+  </div>
+
   <div id="calendar"></div>
 
   <div id="dynamic-content" style="display: none;">
@@ -4627,62 +4631,68 @@ body {
                                <input type="number" id="reservationNights" name="reservationNights" readonly class="readonly-input">
                             </div>
                         </div>
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label for="reservationIVA"><i class="fas fa-percentage"></i> IVA (%):</label>
-                                <input type="number" id="reservationIVA" name="reservationIVA" value="16" step="0.1" min="0" data-admin-editable="true" class="admin-editable">
-                            </div>
-                            <div class="form-group">
-                                <label for="reservationISH"><i class="fas fa-percentage"></i> ISH (%):</label>
-                                <input type="number" id="reservationISH" name="reservationISH" value="3" step="0.1" min="0" data-admin-editable="true" class="admin-editable">
-                            </div>
-                            </div>
                          <div class="form-group total-section">
                                <label><i class="fas fa-calculator"></i> Total a Pagar:</label>
                                <span id="reservationTotal" class="calculated-total">$0.00</span>
                          </div>
                     </div>
 
-                    <!-- Tab 2: Cliente -->
-                    <div id="tab-cliente" class="tab-content">
-                       <h4><i class="fas fa-user"></i> Datos del Cliente</h4>
-                       <div class="form-group guest-select-group">
-                            <label for="reservationGuestSelect"><i class="fas fa-search"></i> Cliente Existente:</label>
-                            <select id="reservationGuestSelect" name="guestId">
-                                <option value="" selected>-- Seleccione o ingrese nuevo --</option>
-                                <!-- Guest options will be populated dynamically -->
-                            </select>
-                            <button type="button" id="addGuestFromReservationBtnInline" class="inline-add-btn"><i class="fas fa-user-plus"></i></button>
-                       </div>
-                       <hr>
-                        <p class="manual-entry-label"><i>O ingrese los datos manualmente:</i></p>
-                         <div class="form-grid">
-                            <div class="form-group form-group-full">
-                                <label for="guestNameManual"><i class="fas fa-user"></i> Nombre Completo:</label>
-                                <input type="text" id="guestNameManual" name="guestNameManual">
-                            </div>
-                            <div class="form-group">
-                                <label for="guestNationalityManual"><i class="fas fa-flag"></i> Nacionalidad:</label>
-                                <input type="text" id="guestNationalityManual" name="guestNationalityManual">
-                            </div>
-                            <div class="form-group">
-                                <label for="guestPhoneManual"><i class="fas fa-phone"></i> Teléfono:</label>
-                                <input type="tel" id="guestPhoneManual" name="guestPhoneManual">
-                            </div>
-                             <div class="form-group form-group-full">
-                                <label for="guestAddressManual"><i class="fas fa-map-marker-alt"></i> Dirección (Calle, Ciudad, Estado):</label>
-                                <input type="text" id="guestAddressManual" name="guestAddressManual" placeholder="Ej: Av. Siempreviva 742, Springfield, SP">
-                             </div>
-                            <div class="form-group">
-                                <label for="guestRFCManual"><i class="fas fa-id-card"></i> RFC:</label>
-                                <input type="text" id="guestRFCManual" name="guestRFCManual">
-                            </div>
-                             <div class="form-group">
-                                <label for="guestEmailManual"><i class="fas fa-envelope"></i> Correo Electrónico:</label>
-                                <input type="email" id="guestEmailManual" name="guestEmailManual">
-                            </div>
-                        </div>
-                    </div>
+                   <!-- Tab 2: Cliente -->
+<div id="tab-cliente" class="tab-content">
+    <h4><i class="fas fa-user"></i> Datos del Cliente</h4>
+
+    <div class="form-group guest-select-group">
+        <label for="reservationGuestSelect"><i class="fas fa-search"></i> Cliente Existente:</label>
+        <select id="reservationGuestSelect" name="guestId">
+            <option value="" selected>-- Seleccione o ingrese nuevo --</option>
+            <!-- Opciones se llenan dinámicamente -->
+        </select>
+        <button type="button" id="addGuestFromReservationBtnInline" class="inline-add-btn"><i class="fas fa-user-plus"></i></button>
+    </div>
+
+    <hr>
+    <p class="manual-entry-label"><i>O ingrese los datos manualmente:</i></p>
+    <div class="form-grid">
+
+        <div class="form-group form-group-full">
+            <label for="guestNameManual"><i class="fas fa-user"></i> Nombre Completo:</label>
+            <input type="text" id="guestNameManual" name="guestName">
+        </div>
+
+        <div class="form-group">
+            <label for="guestNationalityManual"><i class="fas fa-flag"></i> Nacionalidad:</label>
+            <input type="text" id="guestNationalityManual" name="guestNationality">
+        </div>
+
+        <div class="form-group">
+            <label for="guestPhoneManual"><i class="fas fa-phone"></i> Teléfono:</label>
+            <input type="tel" id="guestPhoneManual" name="guestPhone">
+        </div>
+
+        <div class="form-group form-group-full">
+            <label for="guestAddressManual"><i class="fas fa-map-marker-alt"></i> Dirección (Calle, Ciudad, Estado):</label>
+            <input type="text" id="guestAddressManual" name="guestAddress" placeholder="Ej: Av. Siempreviva 742, Springfield, SP">
+        </div>
+
+        <div class="form-group">
+            <label for="guestPostalCodeManual"><i class="fas fa-mail-bulk"></i> Código Postal:</label>
+            <input type="text" id="guestPostalCodeManual" name="guestPostalCode">
+        </div>
+
+        <div class="form-group">
+            <label for="guestCarInfoManual"><i class="fas fa-car"></i> Auto:</label>
+            <input type="text" id="guestCarInfoManual" name="guestCar" placeholder="Ej: Versa gris, placas XYZ123">
+        </div>
+
+        <div class="form-group">
+            <label for="guestRFCManual"><i class="fas fa-id-card"></i> RFC:</label>
+            <input type="text" id="guestRFCManual" name="guestRFC">
+        </div>
+
+        <div class="form-group">
+            <label for="guestEmailManual"><i class="fas fa-envelope"></i> Correo Electrónico:</label>
+            <input type="email" id="guestEmailManual" name="guestEmail">
+        </div>
 
                     <!-- Tab 3: Detalles -->
                     <div id="tab-detalles" class="tab-content">

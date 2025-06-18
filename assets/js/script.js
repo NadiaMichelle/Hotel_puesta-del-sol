@@ -52,6 +52,8 @@ async function fetchRooms() {
     }
 }
 
+
+
 /**
  * Obtiene todas las reservaciones desde la API
  */
@@ -165,29 +167,6 @@ async function deleteReservation(reservationId) {
 /**
  * Guarda una habitación en la base de datos
  */
-async function saveRoom(roomData) {
-    try {
-        const url = roomData.id 
-            ? 'api/rooms.php?action=update' 
-            : 'api/rooms.php?action=add';
-            
-        const method = roomData.id ? 'PUT' : 'POST';
-        
-        const response = await fetch(url, {
-            method: method,
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(roomData)
-        });
-        
-        if (!response.ok) throw new Error('Error en la respuesta del servidor');
-        return await response.json();
-    } catch (error) {
-        console.error('Error saving room:', error);
-        return { success: false, error: error.message };
-    }
-}
 
 /**
  * Guarda un huésped en la base de datos
@@ -259,12 +238,12 @@ slotLabelDidMount: function(info) {
             locale: 'es',
             resourceAreaHeaderContent: 'Habitaciones',
             resources: rooms.map(room => ({
-                id: room.id,
-                title: `${room.type} ${room.number || ''}`.trim(),
-                extendedProps: {
-                    inapam: room.inapam
-                }
-            })),
+            id: room.id,
+            title: `${room.type} ${room.number || ''}`.trim(),
+            extendedProps: {
+                inapam: room.inapam
+            }
+        })),
             events: reservations.map(res => ({
                 id: res.id,
                 title: res.title,
@@ -331,21 +310,7 @@ slotLabelDidMount: function(info) {
     
   }
 
-  document.getElementById('roomSearchInput').addEventListener('input', function () {
-  const query = this.value.trim().toLowerCase();
 
-  calendarInstance.getResources().forEach(resource => {
-    const title = resource.title.toLowerCase();
-    const number = (resource.extendedProps?.number || '').toString();
-
-    const match = title.includes(query) || number.includes(query);
-
-    const row = document.querySelector(`.fc-datagrid-cell.fc-resource-${resource.id}`);
-    if (row) {
-      row.closest('tr').style.display = match || !query ? '' : 'none';
-    }
-  });
-});
 
 /**
  * Personaliza la visualización de eventos en el calendario
@@ -775,8 +740,6 @@ function setupReservationModalEventListeners() {
         updateSubmitButtonState();
     };
     reservationRateInput.oninput = calculateReservationTotal;
-    reservationIVAInput.oninput = calculateReservationTotal;
-    reservationISHInput.oninput = calculateReservationTotal;
     inapamCheckbox.onchange = toggleInapamDetails;
     inapamDiscountValueInput.oninput = calculateReservationTotal;
     reservationGuestSelect.onchange = (e) => populateManualGuestFields(e.target.value);
@@ -910,12 +873,6 @@ function calculateReservationTotal() {
     const nights = parseInt(document.getElementById('reservationNights').value) || 0;
     const rate = parseFloat(document.getElementById('reservationRate').value) || 0;
 
-    const ivaInput = parseFloat(document.getElementById('reservationIVA').value);
-    const ivaRate = !isNaN(ivaInput) ? ivaInput / 100 : 0.16;
-
-    const ishInput = parseFloat(document.getElementById('reservationISH').value);
-    const ishRate = !isNaN(ishInput) ? ishInput / 100 : 0.03;
-
     const inapamCheckbox = document.getElementById('inapamDiscount');
     const inapamDiscountTypeEl = document.getElementById('inapamDiscountType');
     const inapamDiscountValueEl = document.getElementById('inapamDiscountValue');
@@ -942,9 +899,7 @@ function calculateReservationTotal() {
         discountedBaseRate = Math.max(0, discountedBaseRate);
     }
 
-    const ivaAmount = discountedBaseRate * ivaRate;
-    const ishAmount = discountedBaseRate * ishRate;
-    const total = discountedBaseRate + ivaAmount + ishAmount;
+    const total = discountedBaseRate; // ❌ No sumamos IVA ni ISH
 
     // 👇 DEBUG EN CONSOLA
     console.log('DEBUG RESERVA ↓↓↓↓↓');
@@ -955,8 +910,6 @@ function calculateReservationTotal() {
     console.log('Tipo descuento:', inapamDiscountType);
     console.log('Valor descuento:', inapamDiscountValue);
     console.log('Subtotal con descuento:', discountedBaseRate);
-    console.log('IVA:', ivaAmount);
-    console.log('ISH:', ishAmount);
     console.log('Total final:', total);
 
     document.getElementById('reservationTotal').textContent = `$${total.toFixed(2)}`;
@@ -1822,12 +1775,12 @@ navLinks.forEach(link => {
         if (section === 'Calendario') {
             calendarEl.style.display = 'block';
             renderCalendar();
-        } else if (section === 'Habitaciones') {
-            renderRoomsSection();
         } else if (section === 'Huéspedes') {
             renderGuestsSection();
         } else if (section === 'Anticipos') {
             renderAnticiposSection();
+
+            
         } else if (section === 'Reservas') {
             renderReservationsSection();
         } else if (section === 'Configuración') {
@@ -2232,159 +2185,154 @@ function renderAddUserSection() {
 
     cargarUsuarios();
 }
+function editRoomTypeTariffs(tipoId) {
+  // Elimina cualquier modal anterior
+  const existing = document.getElementById('modalTarifasTipo');
+  if (existing) existing.remove();
 
-   
-// =================== RENDER ROOMS SECTION ===================
-function renderRoomsSection() {
-window.handleRoomFormSubmit = handleRoomFormSubmit;
-window.editRoom = editRoom;
-window.deleteRoom = deleteRoom;
-
-    dynamicContentEl.innerHTML = `
-        <div class="container mt-4">
-            <h3><i class="fas fa-bed me-2"></i> Gestión de Habitaciones</h3>
-
-            <!-- Formulario fijo en la pantalla -->
-            <div id="roomFormContainer" class="border rounded-3 shadow-sm p-4 my-4 bg-white">
-                <h5 id="formTitle"><i class="fas fa-door-open me-2"></i> Nueva Habitación</h5>
-                <form id="roomForm">
-                    <input type="hidden" id="roomId">
-                    <div class="row g-3 mt-2">
-                        <div class="col-md-3"><input type="text" class="form-control" id="roomType" placeholder="Tipo" required></div>
-                        <div class="col-md-2"><input type="text" class="form-control" id="roomNumber" placeholder="Número" required></div>
-                        <div class="col-md-2"><input type="number" class="form-control" id="roomBeds" placeholder="Camas" required></div>
-                        <div class="col-md-2"><input type="number" class="form-control" id="roomCapacity" placeholder="Capacidad" required></div>
-                        <div class="col-md-3"><input type="number" step="0.01" class="form-control" id="roomPrice" placeholder="Precio" required></div>
-                        <div class="col-md-3">
-                            <select id="roomInapam" class="form-select">
-                                <option value="0">Sin INAPAM</option>
-                                <option value="1">Con INAPAM</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <select id="roomStatus" class="form-select" required>
-                                <option value="disponible">Disponible</option>
-                                <option value="ocupada">Ocupada</option>
-                                <option value="mantenimiento">Mantenimiento</option>
-                                <option value="limpieza">Limpieza</option>
-                                <option value="bloqueada">Bloqueada</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="mt-3 text-end">
-                        <button type="reset" class="btn btn-secondary" onclick="clearRoomForm()"><i class="fas fa-times me-1"></i> Cancelar</button>
-                        <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i> Guardar</button>
-                    </div>
-                </form>
+  const modalHtml = `
+    <div class="modal fade" id="modalTarifasTipo" tabindex="-1">
+      <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">⚙️ Configurar Tarifas del Tipo ID ${tipoId}</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <!-- Tarifas normales -->
+            <h5>Tarifas normales</h5>
+            <div class="scrollable-table mb-4">
+              <table class="table table-bordered" id="tablaTarifasNormalesTipo">
+                <thead>
+                  <tr>
+                    <th>Temporada</th><th>Inicio</th><th>Fin</th><th>Pax Min</th><th>Pax Max</th><th>Precio</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><input class="form-control" value="Baja"></td>
+                    <td><input class="form-control" type="date"></td>
+                    <td><input class="form-control" type="date"></td>
+                    <td><input class="form-control" type="number" value="1"></td>
+                    <td><input class="form-control" type="number" value="5"></td>
+                    <td><input class="form-control" type="number" value="1000"></td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
 
-            <!-- Lista de habitaciones -->
-            <div id="roomsListContainer" class="list-group shadow-sm"></div>
+            <!-- CD -->
+            <h5>Tarifas con Descuento (CD)</h5>
+            <div class="scrollable-table mb-4">
+              <table class="table table-bordered" id="tablaTarifasCDTipo">
+                <thead>
+                  <tr>
+                    <th>Inicio (dd/mm)</th><th>Fin (dd/mm)</th><th>Pax Min</th><th>Pax Max</th><th>Noches Min</th><th>Noches Max</th><th>Precio</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><input class="form-control" placeholder="01/07"></td>
+                    <td><input class="form-control" placeholder="15/07"></td>
+                    <td><input class="form-control" value="1"></td>
+                    <td><input class="form-control" value="4"></td>
+                    <td><input class="form-control" value="1"></td>
+                    <td><input class="form-control" value="10"></td>
+                    <td><input class="form-control" value="900"></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- INAPAM -->
+            <h5>Descuento INAPAM</h5>
+            <div class="row mb-3 align-items-center">
+              <div class="col-auto">
+                <input class="form-check-input" type="checkbox" id="usarInapamTipo">
+                <label class="form-check-label" for="usarInapamTipo">Aplicar descuento INAPAM</label>
+              </div>
+              <div class="col-auto">
+                <label class="form-label">Monto fijo ($)</label>
+                <input class="form-control" type="number" id="inapamMontoTipo" value="50">
+              </div>
+            </div>
+
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button class="btn btn-success" onclick="guardarTarifasTipo(${tipoId})">Guardar</button>
+          </div>
         </div>
-    `;
+      </div>
+    </div>
+  `;
 
-    dynamicContentEl.style.display = 'block';
-    calendarEl.style.display = 'none';
-
-    fetchRooms().then(renderRoomsList);
-
-    document.getElementById('roomForm').addEventListener('submit', handleRoomFormSubmit);
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+  const modal = new bootstrap.Modal(document.getElementById('modalTarifasTipo'));
+  modal.show();
 }
 
-function renderRoomsList(rooms) {
-    const container = document.getElementById('roomsListContainer');
-    container.innerHTML = '';
+function guardarTarifasTipo(tipoId) {
+  const tarifasNormales = [];
+  document.querySelectorAll('#tablaTarifasNormalesTipo tbody tr').forEach(row => {
+    const inputs = row.querySelectorAll('input');
+    tarifasNormales.push({
+      temporada: inputs[0].value,
+      inicio: inputs[1].value,
+      fin: inputs[2].value,
+      pax_min: inputs[3].value,
+      pax_max: inputs[4].value,
+      precio: inputs[5].value
+    });
+  });
 
-    rooms.forEach(room => {
-        const inapam = room.inapam == 1 ? `<span class="badge bg-success me-1"><i class="fas fa-check-circle"></i> INAPAM</span>` : '';
-        const estado = `<span class="badge bg-${getRoomStateColor(room.status)}">${getRoomStatusText(room.status)}</span>`;
-        container.innerHTML += `
-            <div class="list-group-item d-flex justify-content-between align-items-center py-3">
-                <div class="d-flex align-items-center gap-3">
-                    <i class="fas fa-door-open fa-2x text-secondary"></i>
-                    <div>
-                        <div><strong>${room.type}</strong> <small class="text-muted">#${room.number}</small></div>
-                        <div class="small text-muted">
-                            🛏️ ${room.beds} camas · 👥 ${room.capacity} personas · 💵 $${parseFloat(room.price).toFixed(2)} ${inapam} ${estado}
-                        </div>
-                    </div>
-                </div>
-                <div class="d-flex gap-2">
-                    <button class="btn btn-sm btn-warning" onclick='editRoom(${JSON.stringify(room)})'><i class="fas fa-edit"></i></button>
-                    <button class="btn btn-sm btn-danger" onclick='deleteRoom(${room.id})'><i class="fas fa-trash-alt"></i></button>
-                </div>
-            </div>
-        `;
+  const tarifasCD = [];
+  document.querySelectorAll('#tablaTarifasCDTipo tbody tr').forEach(row => {
+    const inputs = row.querySelectorAll('input');
+    tarifasCD.push({
+      inicio: inputs[0].value,
+      fin: inputs[1].value,
+      pax_min: inputs[2].value,
+      pax_max: inputs[3].value,
+      noches_min: inputs[4].value,
+      noches_max: inputs[5].value,
+      precio: inputs[6].value
+    });
+  });
+
+  const inapam_aplica = document.getElementById('usarInapamTipo').checked ? 1 : 0;
+  const inapam_monto = document.getElementById('inapamMontoTipo').value;
+
+  const payload = {
+    tipo_id: tipoId,
+    tarifas_normales: tarifasNormales,
+    tarifas_cd: tarifasCD,
+    inapam_aplica,
+    inapam_monto
+  };
+
+  fetch('api/room_types.php?action=save_tarifas', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+    .then(res => res.json())
+    .then(json => {
+      if (json.success) {
+        showAlert('Tarifas actualizadas', 'success');
+        bootstrap.Modal.getInstance(document.getElementById('modalTarifasTipo')).hide();
+        document.getElementById('modalTarifasTipo').remove();
+      } else {
+        showAlert('Error al guardar tarifas', 'error');
+      }
     });
 }
 
+// REGISTRAR en window
+window.editRoomTypeTariffs = editRoomTypeTariffs;
+window.guardarTarifasTipo = guardarTarifasTipo;
 
-function editRoom(room) {
-    document.getElementById('formTitle').textContent = 'Editar Habitación';
-    document.getElementById('roomId').value = room.id;
-    document.getElementById('roomType').value = room.type;
-    document.getElementById('roomNumber').value = room.number;
-    document.getElementById('roomBeds').value = room.beds;
-    document.getElementById('roomCapacity').value = room.capacity;
-    document.getElementById('roomPrice').value = room.price;
-    document.getElementById('roomInapam').value = room.inapam;
-    document.getElementById('roomStatus').value = room.status;
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-function clearRoomForm() {
-    document.getElementById('formTitle').textContent = 'Nueva Habitación';
-    document.getElementById('roomForm').reset();
-    document.getElementById('roomId').value = '';
-}
-
-async function handleRoomFormSubmit(e) {
-    e.preventDefault();
-    const roomData = {
-        id: document.getElementById('roomId').value || null,
-        type: document.getElementById('roomType').value,
-        number: document.getElementById('roomNumber').value,
-        beds: document.getElementById('roomBeds').value,
-        capacity: document.getElementById('roomCapacity').value,
-        price: document.getElementById('roomPrice').value,
-        inapam: document.getElementById('roomInapam').value,
-        status: document.getElementById('roomStatus').value
-    };
-
-    const result = await saveRoom(roomData);
-    if (result.success) {
-        showAlert('Habitación guardada con éxito', 'success');
-        clearRoomForm();
-        fetchRooms().then(renderRoomsList);
-    } else {
-        showAlert('Error al guardar habitación', 'error');
-    }
-}
-
-async function deleteRoom(id) {
-    if (!confirm('¿Eliminar esta habitación?')) return;
-
-    const result = await fetch(`api/rooms.php?action=delete&id=${id}`, { method: 'DELETE' });
-    const json = await result.json();
-
-    if (json.success) {
-        showAlert('Habitación eliminada', 'success');
-        fetchRooms().then(renderRoomsList);
-    } else {
-        showAlert('Error al eliminar habitación', 'error');
-    }
-}
-
-function getRoomStateColor(status) {
-    switch (status) {
-        case 'disponible': return 'success';
-        case 'ocupada': return 'warning';
-        case 'mantenimiento': return 'secondary';
-        case 'limpieza': return 'info';
-        case 'bloqueada': return 'danger';
-        default: return 'dark';
-    }
-}
+   
 
 
 // =================== GUESTS SECTION ===================
