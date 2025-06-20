@@ -1,37 +1,67 @@
 <?php
-error_reporting(0); // Evita que los warnings se muestren en el JSON
-ini_set('display_errors', 0);
-
+require_once '../config.php';
 header('Content-Type: application/json');
-require_once '../config.php'; // Ajusta la ruta si es necesario
 
-
-if ($action === 'get_all') {
+if ($_GET['action'] === 'get_all') {
     try {
-        // Obtener todos los tipos con sus habitaciones
-        $stmtTipos = $pdo->query("SELECT * FROM tipos_habitacion");
-        $tipos = $stmtTipos->fetchAll();
+        $stmt = $pdo->query("SELECT r.id, r.numero, r.capacidad, r.status, t.nombre AS tipo, t.tarifas_normales
+                             FROM rooms r
+                             JOIN tipos_habitacion t ON r.id_tipo = t.id");
+        $habitaciones = [];
 
-        $response = [];
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $tarifas = json_decode($row['tarifas_normales'], true);
+            $tarifa_vigente = 0;
 
-        foreach ($tipos as $tipo) {
-            $stmtHabs = $pdo->prepare("SELECT * FROM rooms WHERE id_tipo = ?");
-            $stmtHabs->execute([$tipo['id']]);
-            $habitaciones = $stmtHabs->fetchAll();
-
-            foreach ($habitaciones as $hab) {
-                $response[] = [
-                    'id' => $hab['id'],
-                    'number' => $hab['nombre'],
-                    'type' => $tipo['nombre'],
-                    'inapam' => $tipo['inapam_aplica'] ?? 0
-                ];
+            if (!empty($tarifas)) {
+                $ultima = end($tarifas);
+                $tarifa_vigente = floatval($ultima['precio'] ?? 0);
             }
+
+            $habitaciones[] = [
+                'id' => $row['id'],
+                'numero' => $row['numero'],
+                'capacidad' => $row['capacidad'],
+                'tipo' => $row['tipo'],
+                'status' => strtolower($row['status']), // 👈 ¡aquí!
+                'tarifa_vigente' => $tarifa_vigente
+            ];
         }
 
-        echo json_encode($response);
+        echo json_encode($habitaciones);
     } catch (Exception $e) {
-        http_response_code(500);
-        echo json_encode(['error' => 'Error al obtener habitaciones']);
+        echo json_encode(['error' => 'Error al obtener habitaciones', 'message' => $e->getMessage()]);
     }
+    exit;
 }
+
+if ($_GET['action'] === 'get' && isset($_GET['id'])) {
+    $id = intval($_GET['id']);
+    $stmt = $pdo->prepare("SELECT id, numero, capacidad, id_tipo, status FROM rooms WHERE id = ?");
+    $stmt->execute([$id]);
+    $room = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($room) {
+        $room['status'] = strtolower($room['status']); // 👈 importante para que compare bien en JS
+        echo json_encode($room);
+    } else {
+        echo json_encode(null);
+    }
+    exit;
+}
+if ($_GET['action'] === 'get' && isset($_GET['id'])) {
+    $id = intval($_GET['id']);
+    $stmt = $pdo->prepare("SELECT r.*, t.nombre AS tipo FROM rooms r JOIN tipos_habitacion t ON r.id_tipo = t.id WHERE r.id = ?");
+    $stmt->execute([$id]);
+    $room = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($room) {
+        echo json_encode($room);
+    } else {
+        echo json_encode(null);
+    }
+    exit;
+}
+
+// Si no hay acción válida
+echo json_encode(['error' => 'Acción no válida']);

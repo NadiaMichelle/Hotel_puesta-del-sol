@@ -52,7 +52,14 @@ async function fetchRooms() {
     }
 }
 
-
+async function validateRoomAvailability(roomId) {
+    const room = await getRoomById(roomId);
+    if (!room) {
+        console.warn("validateRoomAvailability: Room not found for ID:", roomId);
+        return false;
+    }
+    return room.status === ROOM_STATUS.DISPONIBLE;
+}
 
 /**
  * Obtiene todas las reservaciones desde la API
@@ -237,13 +244,15 @@ slotLabelDidMount: function(info) {
 },
             locale: 'es',
             resourceAreaHeaderContent: 'Habitaciones',
-            resources: rooms.map(room => ({
-            id: room.id,
-            title: `${room.type} ${room.number || ''}`.trim(),
-            extendedProps: {
-                inapam: room.inapam
-            }
-        })),
+        resources: rooms.map(room => ({
+  id: room.id,
+  title: `N° ${room.numero}`,
+  extendedProps: {
+    tipo: room.tipo,
+    tarifa: room.tarifa_vigente
+  }
+}))
+,
             events: reservations.map(res => ({
                 id: res.id,
                 title: res.title,
@@ -487,15 +496,29 @@ async function populateReservationModalDropdowns() {
         });
 
         // Llenar select de habitaciones
-        const rooms = await fetchRooms();
-        const roomSelect = document.getElementById('reservationRoomSelect');
-        roomSelect.innerHTML = '<option value="">Seleccionar habitación</option>';
-        rooms.forEach(r => {
-            const option = document.createElement('option');
-            option.value = r.id;
-            option.textContent = `${r.type} ${r.number}`;
-            roomSelect.appendChild(option);
-        });
+       const rooms = await fetchRooms();
+const roomSelect = document.getElementById('reservationRoomSelect');
+const rateInput = document.getElementById('reservationRate');
+const roomMap = {};
+
+roomSelect.innerHTML = '<option value="">Seleccionar habitación</option>';
+rooms.forEach(r => {
+  const option = document.createElement('option');
+  option.value = r.id;
+  option.textContent = `${r.tipo} ${r.numero}`;
+  roomMap[r.id] = r; // Guardamos para usarlo después
+  roomSelect.appendChild(option);
+});
+roomSelect.addEventListener('change', () => {
+  const selectedId = roomSelect.value;
+  const selectedRoom = roomMap[selectedId];
+  if (selectedRoom) {
+    rateInput.value = selectedRoom.tarifa_vigente || 0;
+  } else {
+    rateInput.value = '';
+  }
+});
+
 
     } catch (error) {
         console.error('Error llenando los select del modal:', error);
@@ -813,27 +836,16 @@ function closeReservationModal() {
 /**
  * Obtiene los datos de una habitación por ID
  */
-async function getRoomById(roomId) {
+async function getRoomById(id) {
     try {
-        const response = await fetch(`api/rooms.php?action=get&id=${roomId}`);
-        if (!response.ok) throw new Error('Error en la respuesta del servidor');
-        return await response.json();
+        const response = await fetch(`api/rooms.php?action=get&id=${id}`);
+        if (!response.ok) throw new Error('Respuesta no válida');
+        const data = await response.json();
+        return data;
     } catch (error) {
         console.error('Error getting room:', error);
         return null;
     }
-}
-
-/**
- * Valida la disponibilidad de una habitación
- */
-async function validateRoomAvailability(roomId) {
-    const room = await getRoomById(roomId);
-    if (!room) {
-        console.warn("validateRoomAvailability: Room not found for ID:", roomId);
-        return false;
-    }
-    return room.status === ROOM_STATUS.DISPONIBLE;
 }
 
 /**

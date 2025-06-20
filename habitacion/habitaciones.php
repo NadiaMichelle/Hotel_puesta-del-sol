@@ -447,7 +447,7 @@ try {
 <div class="container">
   <?php foreach ($tipos as $tipo): ?>
     <div class="card mb-4" id="tipo_<?= $tipo['id'] ?>">
-      <div class="card-header">
+      <div class="card-header d-flex justify-content-between align-items-center">
         <strong><i class="fas fa-door-open me-2"></i><?= htmlspecialchars($tipo['nombre']) ?></strong>
         <div class="d-flex gap-2">
           <a href="crear_habitacion.php?id_tipo=<?= $tipo['id'] ?>" class="btn btn-sm btn-primary">
@@ -462,8 +462,13 @@ try {
               <i class="fas fa-trash me-1"></i>Eliminar
             </button>
           </form>
+          <!-- 🔽 Botón nuevo para redirigir a tarifas -->
+          <a href="tarifas.php?id=<?= $tipo['id'] ?>" class="btn btn-sm btn-info">
+    <i class="fas fa-dollar-sign me-1"></i>Tarifas
+    </a>
         </div>
       </div>
+
       <div class="card-body">
         <?php if (empty($habitacionesPorTipo[$tipo['id']])): ?>
           <div class="empty-state">
@@ -516,6 +521,14 @@ try {
           <label class="form-label"><i class="fas fa-users me-2"></i>Capacidad</label>
           <input type="number" name="capacidad" id="editHabCapacidad" class="form-control">
         </div>
+        <div class="mb-3">
+  <label class="form-label"><i class="fas fa-check-circle me-2"></i>Disponibilidad</label>
+  <select name="status" id="editHabStatus" class="form-control" required>
+    <option value="Disponible">🟢 Disponible</option>
+    <option value="Ocupado">🔴 Ocupado</option>
+    <option value="Mantenimiento">🔵 Mantenimiento</option>
+  </select>
+</div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-primary" type="submit">
@@ -616,6 +629,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('editHabId').value = btn.dataset.id;
     document.getElementById('editHabNumero').value = btn.dataset.numero;
     document.getElementById('editHabCapacidad').value = btn.dataset.capacidad;
+     document.getElementById('editHabStatus').value = habitacion.status;
   });
 
   // Guardar cambios habitación

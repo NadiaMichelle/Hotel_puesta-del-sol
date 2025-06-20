@@ -16,8 +16,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $capacidad = intval($_POST['capacidad'] ?? 0);
 
     if ($numero && $capacidad > 0) {
-        $stmt = $pdo->prepare("INSERT INTO rooms (numero, capacidad, id_tipo) VALUES (?, ?, ?)");
-        $stmt->execute([$numero, $capacidad, $id_tipo]);
+       $stmt = $pdo->prepare("INSERT INTO rooms (numero, capacidad, id_tipo, status) VALUES (?, ?, ?, ?)");
+    $stmt->execute([$numero, $capacidad, $id_tipo, $status]);
         $mensaje = "Habitación registrada exitosamente.";
     } else {
         $error = "Todos los campos son obligatorios.";
@@ -307,7 +307,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                      max="20"
                      required>
             </div>
-            
+      <div class="mb-4">
+      <label for="status" class="form-label">
+        <i class="fas fa-check-circle input-icon"></i>
+        Disponibilidad
+      </label>
+      <select name="status" id="status" class="form-control" required>
+        <option value="Disponible">🟢 Disponible</option>
+        <option value="Ocupado">🔴 Ocupado</option>
+        <option value="Mantenimiento">🔵 Mantenimiento</option>
+      </select>
+    </div>
+
             <div class="button-group">
               <button type="submit" class="btn btn-custom-primary">
                 <i class="fas fa-save me-2"></i>
